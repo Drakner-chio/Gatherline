@@ -1,5 +1,15 @@
 # Gatherline
 
+## v1.5.0
+
+- **Tours over several zones:** the new *Tours* page puts routes together – for example the
+  Barrens, then Stonetalon, then Ashenvale. *Start* rides the laps of one route, then
+  Shortest Path Forever leads you on to the next one, flights, boats and portals included.
+  Set the laps on each route and whether the tour starts over at the end. It begins with
+  its route in your zone if it has one.
+- The route you ride shows where in the tour you are (*tour 2/3*). Stop, or starting a
+  single route, ends the tour. `/gl tour [name]` starts one from chat.
+
 ## v1.4.0
 
 - **Routes by skill:** on *New route* every herb and ore shows the skill it needs, in the

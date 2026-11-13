@@ -2130,6 +2130,7 @@ local function Help()
     print("  |cffffd100/gl reverse|r  " .. L["turn the route you ride (or the one shown in your zone) round"])
     print("  |cffffd100/gl empty N|r  " .. L["minutes a gathered stop is skipped (0 = never)"])
     print("  |cffffd100/gl stats|r, |cffffd100/gl stats reset|r  " .. L["the statistics of the route you ride (or the one shown in your zone)"])
+    print("  |cffffd100/gl tour|r [name]  " .. L["ride a tour (several routes, zone to zone)"])
     print("  |cffffd100/gl skill|r  " .. L["where to skill up your Herbalism and Mining"])
     print("  |cffffd100/gl stats all|r  " .. L["all your routes, the one that brings the most first"])
     print("  |cffffd100/gl share|r, |cffffd100/gl import|r  " .. L["share the route shown in your zone / add one a friend shared"])
@@ -2204,6 +2205,17 @@ SlashCmdList.GATHERLINE = function(msg)
     elseif cmd == "share" then
         local route = GP:NavRoute() or GP:NavCandidate()
         if route then GP:ShareWindow(route) else Print(L["no route shown in your zone."]) end
+    elseif cmd == "tour" or cmd == "tours" then
+        local want = (msg or ""):match("^%s*%S+%s+(.-)%s*$")
+        local tours = GP:Tours()
+        if not want or want == "" then
+            if #tours == 1 then GP:StartTour(tours[1]) else GP:OpenConfig("tours") end
+        else
+            local found
+            for _, t in ipairs(tours) do if t.name:lower() == want:lower() then found = t end end
+            for _, t in ipairs(tours) do if not found and t.name:lower():find(want:lower(), 1, true) then found = t end end
+            if found then GP:StartTour(found) else Print(L["no tour called |cffffd100%s|r."]:format(want)) end
+        end
     elseif cmd == "skill" or cmd == "skillup" then
         GP:PrintSkillUp()
     elseif cmd == "import" then

@@ -886,6 +886,262 @@ local function BuildDisplay(p)
 end
 
 ---------------------------------------------------------------------------
+-- Tours tab: several routes one after the other, zone to zone
+---------------------------------------------------------------------------
+local TOUR_ROW, STAGE_ROW = 92, 26
+local tourDraft, tourEditing   -- the tour being made or changed (nil: the list)
+
+local function NewDraft(tour)
+    tourEditing = tour
+    tourDraft = {
+        name = tour and tour.name or "",
+        stages = tour and { unpack(tour.stages) } or {},
+        laps = tour and tour.laps or 1,
+        loop = tour and tour.loop or false,
+    }
+    GP:RefreshConfig()
+end
+function GP:EditTourInWindow(tour)
+    self:OpenConfig("tours")
+    NewDraft(tour)
+end
+
+local function BuildTours(p)
+    -- the list
+    local listView = CreateFrame("Frame", nil, p)
+    listView:SetAllPoints(p)
+    T.Note(listView, "Ride several routes one after the other: the laps of one, then Shortest Path Forever leads you to the next, in another zone too.", 0, 0, PAGE_W - 130)
+    local make = FlatButton(listView, "New tour", 110)
+    make:SetPoint("TOPRIGHT", 0, 0)
+    make:SetScript("OnClick", function(self) if not self.disabled then NewDraft(nil) end end)
+    T.Tooltip(make, "New tour", "Put routes you've made together into a tour.")
+    T.Disabler(make, { make })
+    refs.tourNew = make
+    local holder = CreateFrame("Frame", nil, listView)
+    holder:SetPoint("TOPLEFT", 0, -42)
+    holder:SetSize(PAGE_W, BODY_H - 42)
+    local scroll = T.ScrollArea(holder, BODY_H - 42)
+    local empty = T.Note(listView, "", 0, -52, PAGE_W)
+    refs.toursEmpty = empty
+    local rows = {}
+    refs.tourRows = rows
+    local function Row(i)
+        if rows[i] then return rows[i] end
+        local r = CreateFrame("Frame", nil, scroll.child)
+        r:SetSize(PAGE_W - 16, TOUR_ROW - 8)
+        T.Fill(r, C.card)
+        T.Border(r, C.line)
+        r.name = Text(r, "", "GameFontHighlight")
+        r.name:SetPoint("TOPLEFT", 16, -14)
+        r.name:SetWidth(240)
+        r.name:SetJustifyH("LEFT")
+        r.info = Text(r, "", "GameFontDisableSmall")
+        r.info:SetPoint("TOPLEFT", 16, -40)
+        r.info:SetWidth(PAGE_W - 48)
+        r.info:SetJustifyH("LEFT")
+        r.info:SetWordWrap(true)
+        local function Action(texture, title, tip, onClick)
+            local b = T.IconButton(r, texture, 24)
+            b:SetScript("OnClick", function(self)
+                if self.disabled == true or not r.tour then return end
+                onClick(r.tour)
+            end)
+            T.Disabler(b, { b })
+            T.Tooltip(b, title, tip)
+            return b
+        end
+        r.delete = Action("Interface\\Buttons\\UI-StopButton", "Delete", "Delete this tour (its routes stay).", function(tour)
+            GP:Confirm(L["Delete the tour |cff3fd0a0%s|r? Its routes stay."]:format(tour.name), L["Delete"],
+                function() GP:DeleteTour(tour) end)
+        end)
+        r.delete:SetPoint("TOPRIGHT", -10, -10)
+        r.edit = Action("Interface\\Buttons\\UI-GuildButton-PublicNote-Up", "Edit",
+            "Change this tour's routes, their order and laps.", function(tour) NewDraft(tour) end)
+        r.edit:SetPoint("RIGHT", r.delete, "LEFT", -4, 0)
+        r.ride = FlatButton(r, "Start", 72, 24)
+        r.ride:SetPrimary(true)
+        r.ride:SetPoint("RIGHT", r.edit, "LEFT", -8, 0)
+        r.ride:SetScript("OnClick", function(self)
+            if self.disabled or not r.tour then return end
+            if GP:IsTouring(r.tour) then GP:StopNav() else GP:StartTour(r.tour) end
+        end)
+        T.Disabler(r.ride, { r.ride })
+        T.Tooltip(r.ride, "Start / Stop", "Ride the tour: its route in your zone first if it has one, else its first; then on to the next with Shortest Path Forever, flights, boats and portals included.")
+        refs.tourRide = refs.tourRide or {}
+        refs.tourRide[i] = r.ride
+        rows[i] = r
+        return r
+    end
+
+    -- making or changing one
+    local editView = CreateFrame("Frame", nil, p)
+    editView:SetAllPoints(p)
+    T.RowLabel(editView, "Name", 0, 0)
+    local nameBox = T.EditBox(editView, 300)
+    nameBox:SetPoint("TOPLEFT", DROP_X, 0)
+    nameBox:SetScript("OnTextChanged", function(self, user) if user and tourDraft then tourDraft.name = self:GetText() end end)
+    refs.tourName = nameBox
+    local laps = T.Slider(editView, "Laps on each route", 0, -40, 244,
+        function() return tourDraft and tourDraft.laps or 1 end,
+        function(v) if tourDraft then tourDraft.laps = v end end,
+        GP.TOUR_LAPS[1], GP.TOUR_LAPS[2], "", 1)
+    AddRefresher(laps.Refresh)
+    refs.tourLaps = laps
+    local loop = T.LabeledSwitch(editView, "Start over at the end", COL2, -48)
+    loop:SetScript("OnClick", function(self)
+        if tourDraft then tourDraft.loop = not self:IsOn(); self:SetOn(tourDraft.loop) end
+    end)
+    T.Tooltip(loop, "Start over at the end", "After the last route, back to the first, until you stop.")
+    refs.tourLoop = loop
+
+    local STAGES_H = GP.TOUR_MAX_STAGES * STAGE_ROW + 40
+    local card = Card(editView, "Routes, in the order you ride them", 0, -92, PAGE_W, STAGES_H)
+    local stageNote = T.Note(card, "", 12, -34, PAGE_W - 24)
+    local stageRows = {}
+    refs.stageRows = stageRows
+    local function Move(i, by)
+        local s = tourDraft.stages
+        local j = i + by
+        if j < 1 or j > #s then return end
+        s[i], s[j] = s[j], s[i]
+        GP:RefreshConfig()
+    end
+    local function StageRow(i)
+        if stageRows[i] then return stageRows[i] end
+        local r = CreateFrame("Frame", nil, card)
+        r:SetSize(PAGE_W - 24, STAGE_ROW)
+        r:SetPoint("TOPLEFT", 12, -30 - (i - 1) * STAGE_ROW)
+        r.text = Text(r, "", "GameFontHighlightSmall")
+        r.text:SetPoint("LEFT", 0, 0)
+        r.text:SetWidth(PAGE_W - 24 - 100)
+        r.text:SetJustifyH("LEFT")
+        local function Btn(texture, title, fn)
+            local b = T.IconButton(r, texture, 22)
+            b:SetScript("OnClick", function(self) if self.disabled ~= true then fn() end end)
+            T.Disabler(b, { b })
+            T.Tooltip(b, title)
+            return b
+        end
+        r.remove = Btn("Interface\\Buttons\\UI-StopButton", "Take out", function()
+            table.remove(tourDraft.stages, i); GP:RefreshConfig()
+        end)
+        r.remove:SetPoint("RIGHT", 0, 0)
+        r.down = Btn("Interface\\Buttons\\Arrow-Down-Up", "Later", function() Move(i, 1) end)
+        r.down:SetPoint("RIGHT", r.remove, "LEFT", -4, 0)
+        r.up = Btn("Interface\\Buttons\\Arrow-Up-Up", "Earlier", function() Move(i, -1) end)
+        r.up:SetPoint("RIGHT", r.down, "LEFT", -4, 0)
+        stageRows[i] = r
+        return r
+    end
+
+    local y = -92 - STAGES_H - 10
+    local add = T.Dropdown(editView, 300, {}, function(k)
+            local r = k and GP:RouteByID(k)
+            return r and (r.name .. " |cff8a8070(" .. GP:MapName(r.mapID) .. ")|r") or L["Add a route..."]
+        end,
+        function() return nil end,
+        function(k)
+            if tourDraft and k and #tourDraft.stages < GP.TOUR_MAX_STAGES then
+                table.insert(tourDraft.stages, k)
+                GP:RefreshConfig()
+            end
+        end)
+    add:SetPoint("TOPLEFT", 0, y)
+    add.menuScroll = 300
+    refs.tourAdd = add
+
+    local save = FlatButton(editView, "Save tour", 130, 26)
+    save:SetPrimary(true)
+    save:SetPoint("TOPRIGHT", 0, y)
+    save:SetScript("OnClick", function(self)
+        if self.disabled or not tourDraft then return end
+        if GP:SaveTour(tourDraft, tourEditing) then tourDraft, tourEditing = nil, nil; GP:RefreshConfig() end
+    end)
+    T.Disabler(save, { save })
+    refs.tourSave = save
+    local cancel = FlatButton(editView, "Cancel", 100, 26)
+    cancel:SetPoint("RIGHT", save, "LEFT", -8, 0)
+    cancel:SetScript("OnClick", function() tourDraft, tourEditing = nil, nil; GP:RefreshConfig() end)
+    refs.tourCancel = cancel
+
+    AddRefresher(function()
+        if tourEditing then
+            local found = false
+            for _, t in ipairs(GP:Tours()) do if t == tourEditing then found = true end end
+            if not found then tourDraft, tourEditing = nil, nil end
+        end
+        listView:SetShown(tourDraft == nil)
+        editView:SetShown(tourDraft ~= nil)
+        if tourDraft then
+            if not nameBox:HasFocus() then nameBox:SetText(tourDraft.name) end
+            loop:SetOn(tourDraft.loop)
+            -- routes that are gone drop out
+            local s = {}
+            for _, id in ipairs(tourDraft.stages) do if GP:RouteByID(id) then s[#s + 1] = id end end
+            tourDraft.stages = s
+            for i, id in ipairs(s) do
+                local row = StageRow(i)
+                local r = GP:RouteByID(id)
+                row.text:SetText(("%d.  %s  |cff8a8070%s|r"):format(i, r.name, GP:MapName(r.mapID)))
+                row.up:SetDisabled(i == 1)
+                row.down:SetDisabled(i == #s)
+                row:Show()
+            end
+            for i = #s + 1, #stageRows do stageRows[i]:Hide() end
+            stageNote:SetText(#s == 0 and L["No routes yet. Add them below, in the order you want to ride them."] or L[""])
+            local inTour, keys = {}, {}
+            for _, id in ipairs(s) do inTour[id] = true end
+            local routes = {}
+            for _, r in ipairs(GP.db.routes) do
+                if not inTour[r.id] and not r.working and GP:NodeCount(r) >= 2 then routes[#routes + 1] = r end
+            end
+            table.sort(routes, function(a, b)
+                local ma, mb = GP:MapName(a.mapID), GP:MapName(b.mapID)
+                if ma ~= mb then return ma < mb end
+                return a.name < b.name
+            end)
+            for _, r in ipairs(routes) do keys[#keys + 1] = r.id end
+            add.keys = keys
+            add:Refresh()
+            add:SetDisabled(#keys == 0 or #s >= GP.TOUR_MAX_STAGES)
+            save:SetDisabled(#s < 2)
+            return
+        end
+        local tours = GP:Tours()
+        for i, tour in ipairs(tours) do
+            local r = Row(i)
+            r.tour = tour
+            r:ClearAllPoints()
+            r:SetPoint("TOPLEFT", 0, -(i - 1) * TOUR_ROW)
+            r:Show()
+            r.name:SetText(tour.name)
+            local dot = "  |cff4a4f58\226\128\162|r  "
+            local parts = { L["%d routes"]:format(#tour.stages),
+                tour.laps == 1 and L["1 lap each"] or L["%d laps each"]:format(tour.laps),
+                L["about %s riding"]:format(GP.FormatClock(GP:TourTime(tour))) }
+            if tour.loop then parts[#parts + 1] = L["starts over"] end
+            local line2 = table.concat(parts, dot)
+            if GP:IsTouring(tour) and GP:NavStatus() then line2 = "|cff" .. T.ACCENT_HEX .. GP:NavStatus() .. "|r" end
+            r.info:SetText(GP:TourLine(tour) .. "\n" .. line2)
+            local riding = GP:IsTouring(tour)
+            r.ride:SetText(riding and L["Stop"] or L["Start"])
+            r.ride:SetDisabled(not riding and (#tour.stages < 2 or not GP:CanNavigate()))
+        end
+        for i = #tours + 1, #rows do rows[i]:Hide(); rows[i].tour = nil end
+        scroll:SetContent(PAGE_W - 16, math.max(1, #tours * TOUR_ROW), true)
+        local enough = 0
+        for _, r in ipairs(GP.db.routes) do if not r.working and GP:NodeCount(r) >= 2 then enough = enough + 1 end end
+        if #tours == 0 then
+            empty:SetText(enough >= 2 and L["No tours yet. Click New tour and put two or more of your routes together."]
+                or L["A tour is made of routes. Make at least two routes first (New route), then come back."])
+        else
+            empty:SetText(L[""])
+        end
+        make:SetDisabled(enough < 2)
+    end)
+end
+
+---------------------------------------------------------------------------
 -- Riding tab: how Start leads you round (with Shortest Path Forever)
 ---------------------------------------------------------------------------
 local LABELS = {
@@ -1011,6 +1267,7 @@ end
 
 local TABS = {
     { key = "routes",  group = "Routes", label = "My routes", sub = "Your gathering loops, zone by zone.", icon = "Interface\\Icons\\INV_Misc_Map_01", build = BuildRoutes },
+    { key = "tours",   label = "Tours", sub = "Several routes one after the other, zone to zone.", icon = "Interface\\Icons\\INV_Misc_Map02", build = BuildTours },
     { key = "new",     label = "New route", sub = "Pick a zone and what to gather; Gatherline finds the loop.", icon = "Interface\\Icons\\INV_Pick_02", build = BuildNew },
     { key = "riding",  group = "On the way", label = "Guidance", sub = "How Start leads you round, with Shortest Path Forever.", icon = "Interface\\Icons\\Ability_Mount_RidingHorse", build = BuildRiding },
     { key = "display", label = "Map & lines", sub = "How routes are drawn on the world map and the minimap.", icon = "Interface\\Icons\\INV_Misc_Spyglass_03", build = BuildDisplay },

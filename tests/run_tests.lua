@@ -1866,6 +1866,94 @@ do
     GP:OpenConfig("routes")
 end
 
+STEP("tours: routes one after the other, zone to zone")
+do
+    local a
+    for _, r in ipairs(GP.db.routes) do if r.mapID == E and not r.working and GP:NodeCount(r) >= 4 then a = r break end end
+    check(a ~= nil, "a route in Elwynn")
+    local b = {}
+    for k, v in pairs(a) do b[k] = v end
+    b.mapID, b.id, b.name, b.stats = W, GP.db.nextID, "Westfall - Test", nil
+    GP.db.nextID = GP.db.nextID + 1
+    table.insert(GP.db.routes, b)
+    -- the page: make one
+    GP:OpenConfig("tours")
+    check(GP.config.currentTab == "tours" and #GP:Tours() == 0 and ui.toursEmpty:GetText():find("New tour"), "no tours yet")
+    Click(ui.tourNew)
+    check(ui.tourSave.disabled == true, "can't save with no routes")
+    ui.tourAdd.Choose(b.id)
+    ui.tourAdd.Choose(a.id)
+    check(ui.stageRows[1].text:GetText():find("Westfall - Test", 1, true) and ui.stageRows[2]:IsShown(), "two routes in")
+    Click(ui.stageRows[2].up)
+    check(ui.stageRows[1].text:GetText():find(a.name, 1, true), "moved up")
+    check(ui.stageRows[1].up.disabled == true and ui.stageRows[2].down.disabled == true, "no further up or down")
+    Click(ui.tourSave)
+    local tour = GP:Tours()[1]
+    check(tour and #tour.stages == 2 and tour.stages[1] == a.id and tour.laps == 1 and not tour.loop, "saved, in that order")
+    check(tour.name == GP:MapName(E) .. " – " .. GP:MapName(W), "named after its zones: " .. tour.name)
+    check(ui.tourRows[1]:IsShown() and ui.tourRows[1].info:GetText():find(" → ", 1, true), "listed with its zones")
+    check(GP:SaveTour({ stages = { a.id } }) == nil and logHas("at least two routes"), "one route is no tour")
+
+    -- riding it with a fake Shortest Path
+    local tickers = {}
+    C_Timer = { NewTicker = function(_, fn) local t = { fn = fn } function t:Cancel() self.cancelled = true end tickers[#tickers + 1] = t return t end,
+        After = function(_, fn) fn() end }
+    local function Tick() for _, t in ipairs(tickers) do if not t.cancelled then t.fn() end end end
+    local fake = {}
+    local api = { version = 2 }
+    function api.NavigateRoute(owner, stops) fake.owner, fake.stops, fake.cur, fake.ended = owner, stops, 1, nil return true end
+    function api.CurrentStop(owner) if fake.cur and owner == fake.owner then return fake.cur end return nil, "none" end
+    function api.Ended() if fake.ended then return fake.ended, 0 end return nil, "none" end
+    function api.Cancel(owner) if fake.cur then fake.cur, fake.ended = nil, "cancelled" return true end return false end
+    ShortestPathForever = { API = api }
+    local function Arrive()
+        if fake.cur < #fake.stops then fake.cur = fake.cur + 1 else fake.cur, fake.ended = nil, "arrived" end
+        Tick()
+    end
+    local function RideOut(guard)
+        local route = GP:NavRoute()
+        local n = 0
+        while GP:NavRoute() == route and n < (guard or 300) do FAKE_TIME = FAKE_TIME + 10; Arrive(); n = n + 1 end
+    end
+    PLAYER.map, PLAYER.x, PLAYER.y = E, -5, -5
+    GP:RefreshConfig()
+    Click(ui.tourRide[1])
+    check(GP:IsTouring(tour) and GP:NavRoute() == a and fake.stops[1].map == E, "starts with its first route")
+    check(GP:NavStatus():find("tour 1/2", 1, true), "the ride says where in the tour")
+    RideOut()
+    check(GP:NavRoute() == b and fake.stops[1].map == W and logHas("on to |cffffd100Westfall - Test"), "then on to Westfall")
+    check(GP:NavStatus():find("tour 2/2", 1, true), "tour 2/2")
+    RideOut()
+    check(not GP:IsNavigating() and not GP:IsTouring() and logHas("done."), "the last one done: the tour too")
+    -- starting in Westfall: its route there first; starting over at the end
+    tour.loop = true
+    PLAYER.map = W
+    check(GP:StartTour(tour) and GP:NavRoute() == b, "in Westfall: its Westfall route first")
+    RideOut()
+    check(GP:NavRoute() == a and GP:IsTouring(tour), "starts over")
+    SlashCmdList.GATHERLINE("stop")
+    check(not GP:IsNavigating() and not GP:IsTouring(), "/gl stop ends the tour")
+    -- starting another route stops the tour
+    GP:StartTour(tour)
+    GP:StartNav(a, 1)
+    check(GP:IsNavigating(a) and not GP:IsTouring(), "Start on a route: the tour stops")
+    GP:StopNav(true)
+    SlashCmdList.GATHERLINE("tour " .. GP:MapName(E):sub(1, 4))
+    check(GP:IsTouring(tour), "/gl tour <name>")
+    GP:StopNav(true)
+    -- edit: three laps; then a route deleted drops out
+    GP:EditTourInWindow(tour)
+    check(ui.tourName:GetText() == tour.name and ui.stageRows[2]:IsShown(), "Edit shows the tour")
+    Click(ui.tourCancel)
+    GP:DeleteRoute(b)
+    check(#GP:Tours()[1].stages == 1, "a deleted route drops out of the tour")
+    check(not GP:StartTour(tour) and logHas("fewer than two"), "and one route left can't be ridden")
+    GP:DeleteTour(tour)
+    check(#GP:Tours() == 0, "tour deleted")
+    ShortestPathForever = nil
+    GP:OpenConfig("routes")
+end
+
 STEP("without GatherMate2")
 GatherMate2 = nil
 check(not GP:HasGatherMate())

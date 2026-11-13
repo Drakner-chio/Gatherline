@@ -190,7 +190,10 @@ end
 
 local ticker, unsubscribe
 
+local finishing   -- set while a ride ends by itself (its laps done): a tour goes on
+
 local function Halt()
+    if not finishing and GP.tourRide then GP:EndTour() end   -- stopped some other way: the tour too
     -- the lap you stopped in counts for the riding time (an hour's nodes and gold)
     if nav and nav.lapBegan then GP:AddRideTime(nav.route, GetTime() - nav.lapBegan) end
     if ticker then ticker:Cancel(); ticker = nil end
@@ -259,9 +262,15 @@ local function Finish()
     NoteLap(nav.last + 1)
     local route, laps = nav.route, nav.laps
     local took = GetTime() - (nav.began or GetTime())
+    finishing = true
     Halt()
+    finishing = nil
     Print((laps == 1 and L["%s done: 1 lap in %s."]:format(route.name, FormatTime(took)))
         or L["%s done: %d laps in %s."]:format(route.name, laps, FormatTime(took)))
+    if GP.tourRide and GP.TourNext then
+        -- on to the tour's next route, a moment later (not from inside this tick)
+        if C_Timer and C_Timer.After then C_Timer.After(0, function() GP:TourNext() end) else GP:TourNext() end
+    end
 end
 
 local function Tick()
@@ -408,6 +417,8 @@ function GP:NavStatus()
     local k = (p - 1) % nav.n + 1
     local s = L["Riding: stop %d/%d"]:format(k, nav.n)
     if nav.laps ~= 1 then s = s .. L[", lap %d"]:format(Lap(p)) .. (nav.laps > 0 and ("/" .. nav.laps) or "") end
+    local t = GP.tourRide
+    if t then s = s .. L[", tour %d/%d"]:format(t.stage, #t.tour.stages) end
     return s
 end
 

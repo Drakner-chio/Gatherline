@@ -22,6 +22,7 @@ Session.lua
 Share.lua
 Skills_Data.lua
 Skills.lua
+Tours.lua
 Pin.xml
 Routing\PathGrid.lua
 Routing\Path.lua

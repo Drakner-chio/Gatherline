@@ -1992,6 +1992,18 @@ do
     local lines = 0
     for _, l in ipairs(parts.lens.lines) do if l:IsShown() then lines = lines + 1 end end
     check(parts.lens:IsShown() and lines >= 3, "the lens draws the line round you: " .. lines)
+    -- Shortest Path's own compass at the top: the band moves under it, and back
+    ShortestPathForeverCompass = CreateFrame("Frame")
+    GP.HudTick()
+    check(rawget(parts.compass, "underSpf") == true, "under Shortest Path's compass")
+    ShortestPathForeverCompass:Hide()
+    GP.HudTick()
+    check(rawget(parts.compass, "underSpf") == nil, "back to the top once it's gone")
+    ShortestPathForeverCompass = nil
+    -- stops lined up far off: one mark, not a pile
+    local marks = 0
+    for _, m in ipairs(parts.compass.marks) do if m:IsShown() then marks = marks + 1 end end
+    check(marks <= 5, "marks on the band")
     -- no facing (some places hide it): no HUD
     GetPlayerFacing = nil
     GP.HudTick()

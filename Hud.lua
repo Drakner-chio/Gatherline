@@ -158,13 +158,25 @@ local function Part(key, w, h)
     return f
 end
 
+-- Shortest Path Forever's own compass (a ribbon at the top while it guides
+-- you), if it's showing: our band then sits under it rather than on it
+local function SpfCompass()
+    local c = _G.ShortestPathForeverCompass
+    if type(c) == "table" and c.IsShown and c:IsShown() then return c end
+end
+GP.HUD_UNDER_SPF = -18   -- room for its distance line
+
 local function Place(f)
     local h = GP:HudSettings()
     local p = h.pos[f.key]
     local d = GP.HUD_PLACES[f.key]
     f:ClearAllPoints()
+    f.underSpf = nil
     if type(p) == "table" and type(p[1]) == "string" then
         f:SetPoint(p[1], UIParent, p[4] or p[1], tonumber(p[2]) or 0, tonumber(p[3]) or 0)
+    elseif f.key == "compass" and SpfCompass() then
+        f:SetPoint("TOP", SpfCompass(), "BOTTOM", 0, GP.HUD_UNDER_SPF)
+        f.underSpf = true
     else
         f:SetPoint(d[1], UIParent, d[1], d[2], d[3])
     end
@@ -261,6 +273,18 @@ local function UpdateCompass(f, s, px, py, facing)
     f.diamond:Hide()
     local mi = 0
     local cur
+    local taken = {}   -- where marks already are: one close to another is left out (far off, stops line up)
+    local function Free(x)
+        for _, t in ipairs(taken) do if abs(t - x) < 16 then return false end end
+        taken[#taken + 1] = x
+        return true
+    end
+    for _, st in ipairs(s.ahead) do
+        if st.current then
+            local _, _, a = Relative(s.mapID, px, py, st.x, st.y, facing)
+            Free(X(max(-FOV, min(FOV, a))))
+        end
+    end
     for _, st in ipairs(s.ahead) do
         local _, _, a = Relative(s.mapID, px, py, st.x, st.y, facing)
         local x = X(max(-FOV, min(FOV, a)))   -- off the band: held at its edge
@@ -271,7 +295,7 @@ local function UpdateCompass(f, s, px, py, facing)
             f.diamond:ClearAllPoints()
             f.diamond:SetPoint("CENTER", f.band, "TOPLEFT", x, -BAND_H / 2 + 6)
             f.diamond:Show()
-        elseif mi < #f.marks and abs(a) < FOV then
+        elseif mi < #f.marks and abs(a) < FOV and Free(x) then
             mi = mi + 1
             local m = f.marks[mi]
             local c = st.empty and EMPTY or KindColor(st.kind)
@@ -611,6 +635,9 @@ local function Tick()
     local facing = Facing()
     local hideCombat = not h.combat and InCombatLockdown and InCombatLockdown()
     local on = s and px and facing and not hideCombat
+    -- Shortest Path's compass came or went: the band moves with it
+    local c = parts.compass
+    if c and not h.pos.compass and (SpfCompass() ~= nil) ~= (c.underSpf == true) then Place(c) end
     for key, f in pairs(parts) do
         local want = on and h[key]
         if want then

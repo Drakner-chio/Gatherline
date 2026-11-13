@@ -1158,7 +1158,7 @@ local function BuildHud(p)
     end
     local card = Card(p, "Show while riding", 0, 0, PAGE_W, 124)
     refs.hudCompass = HudSwitch(card, "Compass band", 12, -30, "compass",
-        "A band at the top: the way you face, the stop you head for as a diamond and the next ones numbered, empty ones hollow. Under it the stop's name, how far, which way, and the lap so far.")
+        "A band at the top: the way you face, the stop you head for as a diamond and the next ones numbered, empty ones hollow. Under it the stop's name, how far, which way, and the lap so far. When Shortest Path Forever shows its own compass, the band moves under it; switch one of them off (Shortest Path's: \"Show the compass\" in its settings) if one is enough.")
     refs.hudLens = HudSwitch(card, "Ground lens", 12, -60, "lens",
         "A tilted disc round you that turns with you: the route's line along the ground for the next few yards and the stops on it.")
     refs.hudCard = HudSwitch(card, "Lap card", 12, -90, "card",

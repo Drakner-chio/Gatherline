@@ -1,5 +1,11 @@
 # Gatherline
 
+## v1.6.1
+
+- The compass band no longer lies on top of Shortest Path Forever's own compass: while
+  that one shows, the band sits under it (unless you've moved it yourself).
+- Stops that line up far off no longer pile up on the band as a heap of rings.
+
 ## v1.6.0
 
 - **Gathering HUD** while you ride a route or a tour, in three parts you switch on and off

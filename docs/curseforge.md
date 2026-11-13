@@ -1,4 +1,4 @@
-![Gatherline – round the cliffs, not over them](https://raw.githubusercontent.com/Drakner-chio/gatherline/main/docs/images/gatherline-1.jpg)
+![Gatherline – round the cliffs, not over them](https://raw.githubusercontent.com/Drakner-chio/Gatherline/main/docs/images/gatherline-1.jpg)
 
 ## Gathering routes over the real ground
 
@@ -12,7 +12,7 @@
 
 Made for **World of Warcraft: Forever**.
 
-![Every zone, every loop](https://raw.githubusercontent.com/Drakner-chio/gatherline/main/docs/images/gatherline-2.jpg)
+![Every zone, every loop](https://raw.githubusercontent.com/Drakner-chio/Gatherline/main/docs/images/gatherline-2.jpg)
 
 ## Every zone, every loop
 
@@ -20,7 +20,7 @@ Type `/gl`, pick a zone and what to gather – single nodes like *Peacebloom* or
 
 In tests on the real walking maps, routes in mountainous zones like **Dun Morogh** and **Loch Modan** came out **20–29% shorter on foot** than straight-line routes. In flat zones the straight-line loop is often already the best – and then that's the one you get.
 
-![Click Start, just ride](https://raw.githubusercontent.com/Drakner-chio/gatherline/main/docs/images/gatherline-3.jpg)
+![Click Start, just ride](https://raw.githubusercontent.com/Drakner-chio/Gatherline/main/docs/images/gatherline-3.jpg)
 
 ## Click Start. Just ride.
 
@@ -30,7 +30,7 @@ Click **Start** on a route and Shortest Path Forever's arrow and tracker take ov
 - **Lap after lap**, or a set number of laps, with each lap's time in chat.
 - Ride past a stop toward a later one and it simply carries on from there.
 
-![Your pace, your stops](https://raw.githubusercontent.com/Drakner-chio/gatherline/main/docs/images/gatherline-4.jpg)
+![Your pace, your stops](https://raw.githubusercontent.com/Drakner-chio/Gatherline/main/docs/images/gatherline-4.jpg)
 
 ## Your pace, your stops
 
@@ -41,7 +41,7 @@ The **Guidance** page decides how the ride feels:
 - **Stop names:** *Stop 3/42*, what's there – *Copper Vein ×2, Tin Vein* – or both
 - **Arrows** along every route, and a **line to the route** on the minimap
 
-![And more](https://raw.githubusercontent.com/Drakner-chio/gatherline/main/docs/images/gatherline-5.jpg)
+![And more](https://raw.githubusercontent.com/Drakner-chio/Gatherline/main/docs/images/gatherline-5.jpg)
 
 ## And more
 
@@ -80,4 +80,4 @@ Working out a route takes a moment – for a big zone with hundreds of nodes a f
 
 ## Credits
 
-Gatherline grew out of **GatherPath Forever** by severd8 (MIT) and uses the walking search of **Shortest Path Forever** by cjber (GPL-3.0). Licensed under GPL-3.0 – source on [GitHub](https://github.com/Drakner-chio/gatherline).
+Gatherline grew out of **GatherPath Forever** by severd8 (MIT) and uses the walking search of **Shortest Path Forever** by cjber (GPL-3.0). Licensed under GPL-3.0 – source on [GitHub](https://github.com/Drakner-chio/Gatherline).

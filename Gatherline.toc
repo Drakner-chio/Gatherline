@@ -8,7 +8,7 @@
 ## OptionalDeps: GatherMate2, ShortestPathForever, GatherPathPlus, GatherPathForever
 ## SavedVariables: GatherlineDB
 ## X-License: GPL-3.0-or-later
-## X-Website: https://github.com/Drakner-chio/gatherline
+## X-Website: https://github.com/Drakner-chio/Gatherline
 ## X-Curse-Project-ID: 1802518
 ## X-Category: Map
 

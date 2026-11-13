@@ -49,6 +49,7 @@ The **Guidance** page decides how the ride feels:
 
 - **No-go areas:** draw parts of a zone on the world map that your routes keep out of
 - **New nodes join by themselves** wherever they add the least walking
+- **Gathering HUD:** a compass band with your next stops, a ground lens that turns with you, and a lap card with your time against your best – switch on what you like, place it where you like
 - **Tours over several zones:** the Barrens, then Stonetalon, then Ashenvale – Gatherline rides your routes one after the other and Shortest Path takes you from zone to zone
 - **Skill up smarter:** every node shows the skill it needs in skill-up colours, and *Where to skill up* finds the best zone for your Herbalism or Mining – with the right nodes already picked
 - **Share routes:** one line of text, and your friends ride exactly your loop
@@ -85,6 +86,7 @@ The **About** page in the window shows whether everything is there.
 | `/gl stats` | Statistics of the route you ride |
 | `/gl stats all` | All your routes, best first |
 | `/gl tour [name]` | Ride a tour |
+| `/gl hud` | The gathering HUD on or off |
 | `/gl skill` | Where to skill up |
 | `/gl share`, `/gl import` | Share a route / add a shared one |
 

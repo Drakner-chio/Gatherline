@@ -1954,6 +1954,107 @@ do
     GP:OpenConfig("routes")
 end
 
+STEP("the gathering HUD")
+do
+    -- which way things are from you
+    local w, h = GP:MapYards(E)
+    local function Rel(dx, dy, f) return GP.HudRelative(E, 0.5, 0.5, 0.5 + dx / w, 0.5 + dy / h, f) end
+    local r, a, ang = Rel(0, -50, 0)
+    check(near(r, 0, 1e-6) and near(a, 50, 1e-6) and near(ang, 0, 1e-6), "facing north: north is ahead")
+    r, a, ang = Rel(50, 0, 0)
+    check(near(r, 50, 1e-6) and near(a, 0, 1e-6) and ang > 0, "east is to the right")
+    r, a = Rel(-50, 0, math.pi / 2)
+    check(near(a, 50, 1e-6) and near(r, 0, 1e-6), "facing west: west is ahead")
+    r, a = Rel(0, -50, math.pi / 2)
+    check(near(r, 50, 1e-6), "and north to the right")
+
+    local parts = GP.hudParts
+    local hs = GP:HudSettings()
+    check(hs.compass and hs.card and not hs.lens and hs.scale == 100, "compass and lap card on to start with")
+    PLAYER.map, PLAYER.x, PLAYER.y = E, 0.5, 0.5
+    GetPlayerFacing = function() return 0.3 end
+    -- nothing while not riding
+    GP.HudTick()
+    check(not parts.compass:IsShown() and not parts.card:IsShown(), "not riding: no HUD")
+    -- preview: made-up stops round you
+    GP:SetHudPreview(true)
+    GP.HudTick()
+    check(parts.compass:IsShown() and parts.card:IsShown() and not parts.lens:IsShown(), "preview: the parts switched on")
+    check(parts.compass.what:GetText():find("Tin Vein", 1, true) and parts.compass.what:GetText():find(" yd", 1, true), "the band names the next stop and how far")
+    check(parts.compass.lap:GetText():find("Lap 2", 1, true) and parts.compass.lap:GetText():find("best 5:58", 1, true), "and the lap")
+    check(parts.card.time:GetText() == "3:12" and parts.card.delta:GetText():find("to your best", 1, true), "the card: lap time against the best")
+    local shown = 0
+    for _, d in ipairs(parts.card.dots) do if d:IsShown() then shown = shown + 1 end end
+    check(shown == 23, "a dot per stop")
+    check(parts.card.foot:GetText():find("nodes/h", 1, true) and parts.card.foot:GetText():find("2 skipped", 1, true), "nodes an hour, stops skipped")
+    hs.lens = true
+    GP.HudTick()
+    local lines = 0
+    for _, l in ipairs(parts.lens.lines) do if l:IsShown() then lines = lines + 1 end end
+    check(parts.lens:IsShown() and lines >= 3, "the lens draws the line round you: " .. lines)
+    -- no facing (some places hide it): no HUD
+    GetPlayerFacing = nil
+    GP.HudTick()
+    check(not parts.compass:IsShown(), "no way to know which way you face: hidden")
+    GetPlayerFacing = function() return 0.3 end
+    -- in combat, if asked
+    hs.combat = false
+    IN_COMBAT = true
+    GP.HudTick()
+    check(not parts.card:IsShown(), "steps aside in combat")
+    IN_COMBAT = false
+    hs.combat = true
+    -- the page
+    GP:OpenConfig("hud")
+    check(GP.config.currentTab == "hud" and ui.hudCompass:IsOn() and ui.hudLens:IsOn(), "the HUD page")
+    Click(ui.hudCard)
+    check(not hs.card, "a part switched off there")
+    Click(ui.hudCard)
+    Click(ui.hudMove)
+    check(not hs.locked and GP.hudPreview, "moving: unlocked, with the preview")
+    parts.card:GetScript("OnDragStop")(parts.card)
+    check(type(hs.pos.card) == "table", "a dragged part keeps its place")
+    Click(ui.hudReset)
+    check(next(hs.pos) == nil, "and goes back")
+    Click(ui.hudMove)
+    check(hs.locked, "fixed again")
+    Click(ui.hudPreview)
+    check(not GP.hudPreview, "preview ended")
+    -- /gl hud
+    SlashCmdList.GATHERLINE("hud")
+    check(not hs.compass and not hs.lens and not hs.card and logHas("HUD off"), "/gl hud: all off")
+    SlashCmdList.GATHERLINE("hud")
+    check(hs.compass and hs.lens and hs.card, "and back as it was")
+    SlashCmdList.GATHERLINE("hud lens")
+    check(not hs.lens, "/gl hud lens")
+
+    -- a real ride feeds it
+    local tickers = {}
+    C_Timer = { NewTicker = function(_, fn) local t = { fn = fn } function t:Cancel() self.cancelled = true end tickers[#tickers + 1] = t return t end,
+        After = function(_, fn) fn() end }
+    local fake = {}
+    local api = { version = 2 }
+    function api.NavigateRoute(owner, stops) fake.owner, fake.stops, fake.cur = owner, stops, 1 return true end
+    function api.CurrentStop(owner) if fake.cur then return fake.cur end return nil, "none" end
+    function api.Ended() return nil, "none" end
+    function api.Cancel() fake.cur = nil return true end
+    ShortestPathForever = { API = api }
+    local route
+    for _, rr in ipairs(GP.db.routes) do if rr.mapID == E and GP:NodeCount(rr) >= 4 then route = rr break end end
+    check(GP:StartNav(route, 1), "riding")
+    local st = GP:HudState()
+    check(st and st.n == GP:NodeCount(route) and st.k == 1 and st.ahead[1].current and #st.states == st.n
+        and st.states[1] == "current", "the HUD's view of the ride")
+    GP.HudTick()
+    check(parts.card:IsShown() and parts.card.top:GetText() == ("STOP 1/%d"):format(st.n), "the card follows the ride")
+    GP:StopNav(true)
+    GP.HudTick()
+    check(not parts.card:IsShown(), "ride over: gone")
+    ShortestPathForever = nil
+    GetPlayerFacing = nil
+    GP:OpenConfig("routes")
+end
+
 STEP("without GatherMate2")
 GatherMate2 = nil
 check(not GP:HasGatherMate())

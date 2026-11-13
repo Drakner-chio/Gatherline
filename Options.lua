@@ -1142,6 +1142,80 @@ local function BuildTours(p)
 end
 
 ---------------------------------------------------------------------------
+-- HUD tab: the gathering HUD's parts, look and place
+---------------------------------------------------------------------------
+local function BuildHud(p)
+    local function HudSwitch(parent, text, x, y, key, tip, invert)
+        local sw = T.LabeledSwitch(parent, text, x, y)
+        sw:SetScript("OnClick", function(self)
+            GP:HudSettings()[key] = not self:IsOn()
+            GP:UpdateHud(true)
+            GP:RefreshConfig()
+        end)
+        T.Tooltip(sw, text, tip)
+        AddRefresher(function() sw:SetOn(GP:HudSettings()[key]) end)
+        return sw
+    end
+    local card = Card(p, "Show while riding", 0, 0, PAGE_W, 124)
+    refs.hudCompass = HudSwitch(card, "Compass band", 12, -30, "compass",
+        "A band at the top: the way you face, the stop you head for as a diamond and the next ones numbered, empty ones hollow. Under it the stop's name, how far, which way, and the lap so far.")
+    refs.hudLens = HudSwitch(card, "Ground lens", 12, -60, "lens",
+        "A tilted disc round you that turns with you: the route's line along the ground for the next few yards and the stops on it.")
+    refs.hudCard = HudSwitch(card, "Lap card", 12, -90, "card",
+        "A card at the bottom: the stop you head for (how far, how many seconds), a dot for every stop of the lap, the lap time against your best, nodes and gold an hour.")
+    refs.hudCombat = HudSwitch(card, "Show in combat", COL2, -30, "combat",
+        "Off: the HUD steps aside while you fight.")
+
+    local card2 = Card(p, "Look", 0, -130, PAGE_W, 112)
+    local function HudSlider(text, x, y, key, suffix, step)
+        local r = GP.HUD_RANGES[key]
+        local sl = T.Slider(card2, text, x, y, 244,
+            function() return GP:HudSettings()[key] end,
+            function(v) GP:HudSettings()[key] = v; GP:UpdateHud() end,
+            r[1], r[2], suffix, step)
+        AddRefresher(sl.Refresh)
+        return sl
+    end
+    refs.hudScale = HudSlider("Size", 12, -30, "scale", "%", 5)
+    refs.hudAlpha = HudSlider("Opacity", COL2, -30, "alpha", "%", 5)
+    refs.hudRange = HudSlider("Lens reach", 12, -74, "lensRange", " yards", 10)
+    T.Tooltip(refs.hudRange, "Lens reach", "How far round you the ground lens shows the route.")
+
+    local card3 = Card(p, "Place", 0, -248, PAGE_W, 112)
+    refs.hudMove = T.LabeledSwitch(card3, "Move the parts", 12, -30)
+    refs.hudMove:SetScript("OnClick", function(self)
+        local h = GP:HudSettings()
+        h.locked = self:IsOn()
+        if not h.locked and not GP.hudPreview then GP:SetHudPreview(true) end
+        GP:UpdateHud(true)
+        GP:RefreshConfig()
+    end)
+    T.Tooltip(refs.hudMove, "Move the parts", "Drag each part where you like (they show tinted). Switch it off again to fix them and let clicks through.")
+    AddRefresher(function() refs.hudMove:SetOn(not GP:HudSettings().locked) end)
+    local preview = FlatButton(card3, "Preview", 120, 24)
+    preview:SetPoint("TOPLEFT", 12, -70)
+    preview:SetScript("OnClick", function()
+        GP:SetHudPreview(not GP.hudPreview)
+        GP:RefreshConfig()
+    end)
+    T.Tooltip(preview, "Preview", "Shows the HUD with made-up stops round you, to try it out and place it without riding.")
+    AddRefresher(function()
+        preview:SetText(GP.hudPreview and L["End preview"] or L["Preview"])
+        preview:SetPrimary(GP.hudPreview)
+    end)
+    refs.hudPreview = preview
+    local reset = FlatButton(card3, "Back to their places", 170, 24)
+    reset:SetPoint("LEFT", preview, "RIGHT", 8, 0)
+    reset:SetScript("OnClick", function()
+        GP:HudSettings().pos = {}
+        GP:UpdateHud(true)
+    end)
+    T.Tooltip(reset, "Back to their places", "Puts every part back where it started.")
+    refs.hudReset = reset
+    T.Note(card3, "The HUD shows while you ride a route or a tour. /gl hud switches it all off and on.", COL2, -30, PAGE_W - COL2 - 12)
+end
+
+---------------------------------------------------------------------------
 -- Riding tab: how Start leads you round (with Shortest Path Forever)
 ---------------------------------------------------------------------------
 local LABELS = {
@@ -1270,6 +1344,7 @@ local TABS = {
     { key = "tours",   label = "Tours", sub = "Several routes one after the other, zone to zone.", icon = "Interface\\Icons\\INV_Misc_Map02", build = BuildTours },
     { key = "new",     label = "New route", sub = "Pick a zone and what to gather; Gatherline finds the loop.", icon = "Interface\\Icons\\INV_Pick_02", build = BuildNew },
     { key = "riding",  group = "On the way", label = "Guidance", sub = "How Start leads you round, with Shortest Path Forever.", icon = "Interface\\Icons\\Ability_Mount_RidingHorse", build = BuildRiding },
+    { key = "hud",     label = "Gathering HUD", sub = "What you see on screen while you ride: compass, ground lens, lap card.", icon = "Interface\\Icons\\INV_Misc_Spyglass_02", build = BuildHud },
     { key = "display", label = "Map & lines", sub = "How routes are drawn on the world map and the minimap.", icon = "Interface\\Icons\\INV_Misc_Spyglass_03", build = BuildDisplay },
     { key = "taboo",   label = "No-go areas", sub = "Places a route must keep out of.", icon = "Interface\\Icons\\INV_Misc_Bone_Skull_01", build = BuildTaboo },
     { key = "about",   group = "Gatherline", label = "About", sub = "What Gatherline needs, and where it comes from.", icon = "Interface\\Icons\\INV_Misc_Note_01", build = BuildAbout },

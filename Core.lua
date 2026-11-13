@@ -2130,6 +2130,7 @@ local function Help()
     print("  |cffffd100/gl reverse|r  " .. L["turn the route you ride (or the one shown in your zone) round"])
     print("  |cffffd100/gl empty N|r  " .. L["minutes a gathered stop is skipped (0 = never)"])
     print("  |cffffd100/gl stats|r, |cffffd100/gl stats reset|r  " .. L["the statistics of the route you ride (or the one shown in your zone)"])
+    print("  |cffffd100/gl hud|r [compass|lens|card|preview]  " .. L["the gathering HUD: all, one part, or a preview"])
     print("  |cffffd100/gl tour|r [name]  " .. L["ride a tour (several routes, zone to zone)"])
     print("  |cffffd100/gl skill|r  " .. L["where to skill up your Herbalism and Mining"])
     print("  |cffffd100/gl stats all|r  " .. L["all your routes, the one that brings the most first"])
@@ -2216,6 +2217,33 @@ SlashCmdList.GATHERLINE = function(msg)
             for _, t in ipairs(tours) do if not found and t.name:lower():find(want:lower(), 1, true) then found = t end end
             if found then GP:StartTour(found) else Print(L["no tour called |cffffd100%s|r."]:format(want)) end
         end
+    elseif cmd == "hud" then
+        local h = GP:HudSettings()
+        local what = (msg or ""):lower():match("^%s*%S+%s+(%a+)")
+        local keys = { compass = "compass", band = "compass", lens = "lens", card = "card", lap = "card" }
+        if what and keys[what] then
+            h[keys[what]] = not h[keys[what]]
+        elseif what == "preview" then
+            GP:SetHudPreview(not GP.hudPreview)
+        else
+            local any = h.compass or h.lens or h.card
+            if any then
+                h.was = { h.compass, h.lens, h.card }
+                h.compass, h.lens, h.card = false, false, false
+            else
+                local w = type(h.was) == "table" and h.was or { true, false, true }
+                h.compass, h.lens, h.card = w[1] == true, w[2] == true, w[3] == true
+                if not (h.compass or h.lens or h.card) then h.compass, h.card = true, true end
+            end
+        end
+        GP:UpdateHud(true)
+        if GP.RefreshConfig then GP:RefreshConfig() end
+        local on = {}
+        if h.compass then on[#on + 1] = L["compass band"] end
+        if h.lens then on[#on + 1] = L["ground lens"] end
+        if h.card then on[#on + 1] = L["lap card"] end
+        Print(#on == 0 and L["HUD off. |cffffd100/gl hud|r switches it on again."]
+            or L["HUD: %s. |cffffd100/gl hud compass|lens|card|r switches a part."]:format(table.concat(on, ", ")))
     elseif cmd == "skill" or cmd == "skillup" then
         GP:PrintSkillUp()
     elseif cmd == "import" then

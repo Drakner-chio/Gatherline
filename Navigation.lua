@@ -79,7 +79,7 @@ function GP:StopLabels(route)
     local mapID, pts, n = route.mapID, route.points, self:NodeCount(route)
     local w, h = Yards(mapID)
     local reach = (route.sight or 0) + 40
-    local counts, members = {}, {}
+    local counts, members, kindAt = {}, {}, {}
     for kind, names in pairs(route.kinds or {}) do
         self:EachNode(mapID, kind, function(x, y, name)
             if not names[name] or self:IsSkipped(name) or self:InTaboo(mapID, x, y) then return end
@@ -92,6 +92,7 @@ function GP:StopLabels(route)
             if bi then
                 counts[bi] = counts[bi] or {}
                 counts[bi][name] = (counts[bi][name] or 0) + 1
+                kindAt[bi] = kindAt[bi] or kind
                 members[bi] = members[bi] or {}
                 local m = members[bi]
                 m[#m + 1] = x
@@ -111,7 +112,7 @@ function GP:StopLabels(route)
         if #list > GP.NAV_LABEL_NAMES then parts[#parts + 1] = "+" .. (#list - GP.NAV_LABEL_NAMES) end
         labels[i] = table.concat(parts, ", ")
     end
-    return labels, members
+    return labels, members, kindAt
 end
 
 -- A stop's title as the rider picked (db.navLabel)
@@ -380,9 +381,10 @@ function GP:StartNav(route, laps)
         laps = laps, last = laps > 0 and laps * n + 1 or huge,
         began = now, lap = 1, skipped = {},
     }
-    local ok, labels, members = pcall(self.StopLabels, self, route)
+    local ok, labels, members, kindAt = pcall(self.StopLabels, self, route)
     nav.labels = ok and labels or nil
     nav.members = ok and members or nil
+    nav.kindAt = ok and kindAt or nil
     if not Send(1) and not InCombat() then
         nav = nil
         Print(L["Shortest Path Forever won't take the route. Is its Journeys guidance switched on?"])
@@ -419,6 +421,35 @@ function GP:NavStatus()
     if nav.laps ~= 1 then s = s .. L[", lap %d"]:format(Lap(p)) .. (nav.laps > 0 and ("/" .. nav.laps) or "") end
     local t = GP.tourRide
     if t then s = s .. L[", tour %d/%d"]:format(t.stage, #t.tour.stages) end
+    return s
+end
+
+-- What the HUD shows of the ride: nil when not riding, else
+-- { route, mapID, n, lap, laps, k (stop number in the lap), elapsed (this lap),
+--   ahead = { { x, y, what, kind, num, empty, current } ... } (the next GP.HUD_AHEAD positions),
+--   states = { "done" | "skipped" | "current" | "empty" | "todo" } (one per stop of the lap),
+--   skipped (this lap) }
+GP.HUD_AHEAD = 8
+function GP:HudState()
+    if not nav then return nil end
+    local p = nav.pos or 1
+    local lap = Lap(p)
+    local s = { route = nav.route, mapID = nav.route.mapID, n = nav.n, lap = lap, laps = nav.laps,
+        k = (p - 1) % nav.n + 1, elapsed = nav.lapBegan and (GetTime() - nav.lapBegan) or nil, ahead = {}, states = {}, skipped = 0 }
+    for q = p, min(p + GP.HUD_AHEAD - 1, nav.last) do
+        local i = Index(q)
+        s.ahead[#s.ahead + 1] = { x = nav.points[2 * i - 1], y = nav.points[2 * i], what = nav.labels and nav.labels[i],
+            kind = nav.kindAt and nav.kindAt[i], num = (q - 1) % nav.n + 1, empty = q ~= p and Empty(q), current = q == p }
+    end
+    local first = (lap - 1) * nav.n + 1
+    for q = first, first + nav.n - 1 do
+        local st
+        if q < p then st = nav.skipped[q] and "skipped" or "done"
+        elseif q == p then st = "current"
+        else st = Empty(q) and "empty" or "todo" end
+        if st == "skipped" then s.skipped = s.skipped + 1 end
+        s.states[#s.states + 1] = st
+    end
     return s
 end
 

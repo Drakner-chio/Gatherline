@@ -12,6 +12,7 @@ Gathering routes for **World of Warcraft: Forever**: the shortest loop through y
 - **Guidance settings:** how close you need to get before the next stop, how many stops are shown ahead, and whether stops are called by number (*Stop 3/42*), by what's there (*Copper Vein ×2*) or both
 - **Smart laps:** stops whose nodes you just gathered are skipped until they can be back
 - **Statistics per route:** best and average lap, nodes an hour and, with Auctionator, gold an hour
+- **Gathering HUD:** compass band, ground lens and lap card while you ride – each one switchable, movable and sizable
 - **Tours over several zones:** ride routes one after the other, Shortest Path takes you from zone to zone
 - **Routes by skill:** every node shows the skill it needs in skill-up colours; "only what I can gather"; *Where to skill up* finds the best zone for your Herbalism or Mining
 - **Share routes** with friends as one line of text, and see which of your routes brings the most
@@ -48,6 +49,7 @@ The **About** page in the window shows whether everything is there.
 | `/gl stats`, `/gl stats reset` | Statistics of the route you ride / start over |
 | `/gl stats all` | All your routes, best first |
 | `/gl tour [name]` | Ride a tour |
+| `/gl hud [compass\|lens\|card\|preview]` | The gathering HUD: all, one part, or a preview |
 | `/gl skill` | Where to skill up your Herbalism and Mining |
 | `/gl share`, `/gl import` | Share the route shown in your zone / add a shared one |
 | `/gl walk` | Test the walking search |

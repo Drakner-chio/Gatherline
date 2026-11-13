@@ -1,5 +1,21 @@
 # Gatherline
 
+## v1.6.0
+
+- **Gathering HUD** while you ride a route or a tour, in three parts you switch on and off
+  one by one (*Gathering HUD* page, `/gl hud`):
+  - **Compass band** at the top: the way you face, the stop you head for as a diamond, the
+    next ones numbered and empty ones hollow; under it the stop's name, how far, which
+    way, and the lap so far.
+  - **Ground lens**: a tilted disc round you that turns with you, with the route's line
+    along the ground and the stops on it (off to start with).
+  - **Lap card** at the bottom: the stop you head for (yards and seconds), a dot for every
+    stop of the lap (done, skipped, empty), the lap time against your best, nodes and gold
+    an hour.
+- Size, opacity and the lens's reach can be set; *Move the parts* lets you drag each part
+  where you like, *Preview* shows the HUD with made-up stops to try it without riding.
+  It can step aside in combat.
+
 ## v1.5.0
 
 - **Tours over several zones:** the new *Tours* page puts routes together – for example the

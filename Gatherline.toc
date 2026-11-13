@@ -1,0 +1,24 @@
+## Interface: 16001
+## Title: |cff3fd0a0Gatherline|r
+## Notes: Gathering routes over the real ground, and a guide round them.
+## Notes-deDE: Sammelrouten über das echte Gelände, und eine Führung drumherum.
+## Author: Alex
+## Version: 1.0.0
+## IconTexture: Interface\AddOns\Gatherline\Media\Logo
+## OptionalDeps: GatherMate2, ShortestPathForever, GatherPathPlus, GatherPathForever
+## SavedVariables: GatherlineDB
+## X-License: GPL-3.0-or-later
+## X-Category: Map
+
+Locale.lua
+Locale_deDE.lua
+Theme.lua
+Optimize.lua
+Core.lua
+Pin.xml
+Routing\PathGrid.lua
+Routing\Path.lua
+Routing\PathJobs.lua
+Walk.lua
+Navigation.lua
+Options.lua

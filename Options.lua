@@ -342,7 +342,7 @@ end
 
 local function BuildNew(p, page)
     T.RowLabel(p, "Zone", 0, 0)
-    local zone = T.Dropdown(p, 300, {}, function(k) return k and GP:MapName(k) or "Pick a zone" end,
+    local zone = T.Dropdown(p, 240, {}, function(k) return k and GP:MapName(k) or "Pick a zone" end,
         function() return newZone end, function(k)
             if k ~= newZone then newZone, picked = k, {} end
             GP:RefreshConfig()
@@ -359,6 +359,24 @@ local function BuildNew(p, page)
     end)
     T.Tooltip(here, "My zone", "Pick the zone you're in.")
     refs.myZone = here
+    local skill = FlatButton(p, "Where to skill up", 132)
+    skill:SetPoint("TOPRIGHT", 0, 0)
+    skill:SetScript("OnClick", function()
+        local best = GP:PrintSkillUp()
+        if not best then return end
+        -- that zone, with the nodes that still raise your skill picked
+        newZone, picked = best.mapID, {}
+        for _, e in ipairs(best.nodes) do
+            if e.colour == "orange" or e.colour == "yellow" then
+                picked[e.kind] = picked[e.kind] or {}
+                picked[e.kind][e.name] = true
+            end
+        end
+        GP:RefreshConfig()
+    end)
+    T.Tooltip(skill, "Where to skill up",
+        "Looks through every zone for the herbs and ores that still raise your Herbalism or Mining (orange and yellow), lists the best zones in chat, and picks the best one here with those nodes on.")
+    refs.skillUp = skill
 
     local LIST_H = 210 + (WINDOW_H - T.WINDOW.H)
     local holder = CreateFrame("Frame", nil, p)
@@ -426,6 +444,16 @@ local function BuildNew(p, page)
     end)
     refs.groundSwitch = ground
 
+    local only = T.LabeledSwitch(p, "Only what I can gather", 0, y - 122)
+    only:SetScript("OnClick", function(self)
+        GP.db.onlyGatherable = not self:IsOn()
+        GP:RefreshConfig()
+    end)
+    T.Tooltip(only, "Only what I can gather",
+        "List only the herbs and ores your Herbalism or Mining is high enough for. The number after each node is the skill it needs, in the game's colours: red you can't gather yet, orange and yellow raise your skill, green a little, grey no more.")
+    AddRefresher(function() only:SetOn(GP.db.onlyGatherable) end)
+    refs.onlySwitch = only
+
     local make = FlatButton(p, "Make route", 130, 26)
     make:SetPoint("TOPRIGHT", 0, y - 40)
     refs.makeButton = make
@@ -434,7 +462,7 @@ local function BuildNew(p, page)
         local kinds = {}
         for kind, names in pairs(picked) do
             for n, on in pairs(names) do
-                if on and not GP:IsSkipped(n) then
+                if on and not GP:IsSkipped(n) and not (GP.db.onlyGatherable and not GP:CanGather(n, kind)) then
                     kinds[kind] = kinds[kind] or {}
                     kinds[kind][n] = true
                 end
@@ -529,6 +557,11 @@ local function BuildNew(p, page)
         zone.keys = GP:GatherZones()
         zone:Refresh()
         local nodes = newZone and GP:ZoneNodes(newZone) or {}
+        if GP.db.onlyGatherable then
+            local keep = {}
+            for _, e in ipairs(nodes) do if GP:CanGather(e.name, e.kind) then keep[#keep + 1] = e end end
+            nodes = keep
+        end
         local yy, nh, ns_, col = 0, 0, 0, 0
         local lastKind
         for _, e in ipairs(nodes) do
@@ -559,7 +592,7 @@ local function BuildNew(p, page)
             if e.skip then
                 sw.label:SetText(L["|cff8a8070%s (%d) - skipped|r"]:format(e.name, e.count))
             else
-                sw.label:SetText(L["%s |cff8a8070(%d)|r"]:format(e.name, e.count))
+                sw.label:SetText(L["%s |cff8a8070(%d)|r"]:format(e.name, e.count) .. GP:SkillTag(e.name, e.kind))
             end
             T.ClickableLabel(sw, sw.label)
             sw:SetOn(not e.skip and picked[e.kind] and picked[e.kind][e.name] or false)
@@ -972,8 +1005,8 @@ local function BuildAbout(p)
             or L["To bring over routes from GatherPath Plus or GatherPath Forever, switch that addon on for one login, then come back here. (It happens by itself the first time, when Gatherline has no routes yet.)"])
     end)
 
-    local card3 = Card(p, "Made from", 0, -304, PAGE_W, 112)
-    T.Note(card3, "Gatherline grew out of GatherPath Forever by severd8 (MIT licence), whose route solver it still uses. The walking search in Routing/ is Shortest Path Forever's, by cjber (GPL-3.0), and its walking maps come from Shortest Path Forever itself. So Gatherline is under GPL-3.0 too.", 12, -30, PAGE_W - 24)
+    local card3 = Card(p, "Made from", 0, -304, PAGE_W, 130)
+    T.Note(card3, "Gatherline grew out of GatherPath Forever by severd8 (MIT licence), whose route solver it still uses. The walking search in Routing/ is Shortest Path Forever's, by cjber (GPL-3.0), and its walking maps come from Shortest Path Forever itself. So Gatherline is under GPL-3.0 too. The skill each herb and ore needs comes from GatherLite by Wuild (MIT licence).", 12, -30, PAGE_W - 24)
 end
 
 local TABS = {

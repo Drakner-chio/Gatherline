@@ -49,6 +49,7 @@ The **Guidance** page decides how the ride feels:
 
 - **No-go areas:** draw parts of a zone on the world map that your routes keep out of
 - **New nodes join by themselves** wherever they add the least walking
+- **Skill up smarter:** every node shows the skill it needs in skill-up colours, and *Where to skill up* finds the best zone for your Herbalism or Mining – with the right nodes already picked
 - **Share routes:** one line of text, and your friends ride exactly your loop
 - **Your best route:** see which route brings the most gold or nodes an hour
 - **Skip list:** right-click poor or wilted nodes to leave them out everywhere
@@ -82,6 +83,7 @@ The **About** page in the window shows whether everything is there.
 | `/gl empty N` | Minutes a gathered stop is skipped (0 = never) |
 | `/gl stats` | Statistics of the route you ride |
 | `/gl stats all` | All your routes, best first |
+| `/gl skill` | Where to skill up |
 | `/gl share`, `/gl import` | Share a route / add a shared one |
 
 ## Good to know
@@ -90,4 +92,4 @@ Working out a route takes a moment – for a big zone with hundreds of nodes a f
 
 ## Credits
 
-Gatherline grew out of **GatherPath Forever** by severd8 (MIT) and uses the walking search of **Shortest Path Forever** by cjber (GPL-3.0). Licensed under GPL-3.0 – source on [GitHub](https://github.com/Drakner-chio/Gatherline).
+Gatherline grew out of **GatherPath Forever** by severd8 (MIT) and uses the walking search of **Shortest Path Forever** by cjber (GPL-3.0). Skill data for herbs and ores from **GatherLite** by Wuild (MIT). Licensed under GPL-3.0 – source on [GitHub](https://github.com/Drakner-chio/Gatherline).

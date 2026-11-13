@@ -12,6 +12,7 @@ Gathering routes for **World of Warcraft: Forever**: the shortest loop through y
 - **Guidance settings:** how close you need to get before the next stop, how many stops are shown ahead, and whether stops are called by number (*Stop 3/42*), by what's there (*Copper Vein ×2*) or both
 - **Smart laps:** stops whose nodes you just gathered are skipped until they can be back
 - **Statistics per route:** best and average lap, nodes an hour and, with Auctionator, gold an hour
+- **Routes by skill:** every node shows the skill it needs in skill-up colours; "only what I can gather"; *Where to skill up* finds the best zone for your Herbalism or Mining
 - **Share routes** with friends as one line of text, and see which of your routes brings the most
 - **Turn a route round** with one click
 - **No-go areas:** draw parts of a zone your routes stay out of
@@ -45,11 +46,12 @@ The **About** page in the window shows whether everything is there.
 | `/gl empty N` | Minutes a gathered stop is skipped (0 = never) |
 | `/gl stats`, `/gl stats reset` | Statistics of the route you ride / start over |
 | `/gl stats all` | All your routes, best first |
+| `/gl skill` | Where to skill up your Herbalism and Mining |
 | `/gl share`, `/gl import` | Share the route shown in your zone / add a shared one |
 | `/gl walk` | Test the walking search |
 
 ## Credits and licence
 
-Gatherline grew out of **GatherPath Forever** by severd8 (MIT), whose route solver it still uses. The walking search in `Routing/` is from **Shortest Path Forever** by cjber (GPL-3.0), and its walking maps come from Shortest Path Forever itself. Gatherline is therefore licensed under **GPL-3.0-or-later** (`LICENSE`); GatherPath Forever's MIT notice is in `LICENSE-MIT-GatherPathForever`.
+Gatherline grew out of **GatherPath Forever** by severd8 (MIT), whose route solver it still uses. The walking search in `Routing/` is from **Shortest Path Forever** by cjber (GPL-3.0), and its walking maps come from Shortest Path Forever itself. Gatherline is therefore licensed under **GPL-3.0-or-later** (`LICENSE`); GatherPath Forever's MIT notice is in `LICENSE-MIT-GatherPathForever`. The gathering skill each herb and ore needs (`Skills_Data.lua`, made by `tools/make_skills.py`) comes from **GatherLite** by Wuild (MIT, `LICENSE-MIT-GatherLite`).
 
 Development notes: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).

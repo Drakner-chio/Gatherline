@@ -51,6 +51,7 @@ GP.DEFAULTS = {
     navAhead = 10,         -- stops handed to Shortest Path at once (its numbered pins)
     navRespawn = 5,        -- minutes a gathered node counts as gone: stops with only such nodes are skipped (0 = never)
     navLabel = "both",     -- what a stop is called: "number" (Wegpunkt 3/42), "nodes" (what's there), "both"
+    onlyGatherable = false,   -- New route lists only the nodes your Herbalism / Mining can gather
     walkRoutes = true,     -- work routes out with walks over the ground (Shortest Path's walking maps)
 }
 -- The settings on the Display tab, which its Restore defaults button puts back
@@ -2129,6 +2130,7 @@ local function Help()
     print("  |cffffd100/gl reverse|r  " .. L["turn the route you ride (or the one shown in your zone) round"])
     print("  |cffffd100/gl empty N|r  " .. L["minutes a gathered stop is skipped (0 = never)"])
     print("  |cffffd100/gl stats|r, |cffffd100/gl stats reset|r  " .. L["the statistics of the route you ride (or the one shown in your zone)"])
+    print("  |cffffd100/gl skill|r  " .. L["where to skill up your Herbalism and Mining"])
     print("  |cffffd100/gl stats all|r  " .. L["all your routes, the one that brings the most first"])
     print("  |cffffd100/gl share|r, |cffffd100/gl import|r  " .. L["share the route shown in your zone / add one a friend shared"])
     print("  |cffffd100/gl walk|r  " .. L["test: yards on foot from you to the next stops"])
@@ -2202,6 +2204,8 @@ SlashCmdList.GATHERLINE = function(msg)
     elseif cmd == "share" then
         local route = GP:NavRoute() or GP:NavCandidate()
         if route then GP:ShareWindow(route) else Print(L["no route shown in your zone."]) end
+    elseif cmd == "skill" or cmd == "skillup" then
+        GP:PrintSkillUp()
     elseif cmd == "import" then
         GP:ShareWindow()
     elseif cmd == "walk" then

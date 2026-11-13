@@ -1,5 +1,17 @@
 # Gatherline
 
+## v1.4.0
+
+- **Routes by skill:** on *New route* every herb and ore shows the skill it needs, in the
+  game's colours for your Herbalism or Mining – red you can't gather yet, orange and yellow
+  raise your skill, green a little, grey no more.
+- **Only what I can gather:** a switch under the node list hides what your skill isn't high
+  enough for.
+- **Where to skill up:** a button next to *My zone* (and `/gl skill`) looks through every
+  zone for the nodes that still raise your skill, lists the best zones in chat and picks the
+  best one with those nodes on – one click to *Make route*.
+- Skill data for herbs and ores comes from GatherLite (MIT), in every language it has.
+
 ## v1.3.0
 
 - **Share routes:** the new *Share* button on a route's card gives you one line of text

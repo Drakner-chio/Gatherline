@@ -788,7 +788,7 @@ for _, k in ipairs(GP.DISPLAY_KEYS) do
 end
 local listed = {}
 for _, k in ipairs(GP.DISPLAY_KEYS) do listed[k] = true end
-local notOnTab = { minimapAngle = true, sight = true, nextColor = true, tabooShow = true, navLaps = true, walkRoutes = true, navReach = true, navAhead = true, navLabel = true, navRespawn = true }
+local notOnTab = { minimapAngle = true, sight = true, nextColor = true, tabooShow = true, navLaps = true, walkRoutes = true, navReach = true, navAhead = true, navLabel = true, navRespawn = true, onlyGatherable = true }
 for k in pairs(GP.DEFAULTS) do
     check(listed[k] or notOnTab[k], k .. ": every setting on the tab is restored")
 end
@@ -1814,6 +1814,56 @@ do
     route.stats, route.drawn, route.walked, route.walkFactor = nil, nil, nil, nil
     GP:DeleteRoute(added)
     check(#GP.db.routes == before, "all tidied up")
+end
+
+STEP("routes by gathering skill")
+do
+    check(GP:NodeSkill("Kupfervorkommen")[1] == 1 and select(2, GP:NodeSkill("Copper Vein")) == "Mining", "what a node needs, in any language")
+    check(GP:NodeSkill("Black Lotus")[1] == 300 and GP:NodeSkill("Nothing at all") == nil, "Black Lotus 300, unknown nodes nothing")
+    -- the skill as the game says it
+    C_SkillInfo = { GetSkillLineInfoByID = function(id) return id == 182 and { rank = 30, modifier = 0 } or { rank = 0 } end }
+    check(GP:ProfessionRank("Herb Gathering") == 30 and GP:ProfessionRank("Mining") == 0, "Herbalism 30, no Mining")
+    C_SkillInfo = nil
+    GP.FAKE_RANKS = { ["Herb Gathering"] = 30, Mining = 70 }
+    check(GP:Difficulty("Peacebloom") == "yellow" and GP:Difficulty("Earthroot") == "orange"
+        and GP:Difficulty("Mageroyal") == "red" and GP:Difficulty("Tin Vein") == "orange"
+        and GP:Difficulty("Copper Vein") == "green", "the game's colours")
+    GP.FAKE_RANKS.Mining = 100
+    check(GP:Difficulty("Copper Vein") == "grey" and GP:CanGather("Copper Vein") and not GP:CanGather("Mageroyal"), "grey, and what you can't gather")
+    check(GP:SkillTag("Peacebloom"):find("ffff00") and GP:SkillTag("Nothing") == "", "a coloured number after the name")
+    -- New route: the numbers, and only what you can gather
+    GP.FAKE_RANKS = { ["Herb Gathering"] = 30, Mining = 0 }
+    GP:OpenConfig("new")
+    ui.newZone.Choose(E)
+    local function Label(name)
+        for _, sw in ipairs(GP.ui.kindSwitches) do
+            local e = rawget(sw, "entry")
+            if e and e.name == name and sw:IsShown() then return sw.label:GetText() end
+        end
+    end
+    check(Label("Peacebloom") and Label("Peacebloom"):find("ffff00"), "Peacebloom yellow for Herbalism 30")
+    check(Label("Copper Vein") and Label("Copper Vein"):find("ff3a3a"), "Copper Vein red without Mining")
+    Click(GP.ui.onlySwitch)
+    check(GP.db.onlyGatherable and Label("Peacebloom") and not Label("Copper Vein"), "only what I can gather: no Copper Vein")
+    Click(GP.ui.onlySwitch)
+    check(not GP.db.onlyGatherable and Label("Copper Vein"), "and back")
+    -- where to skill up: the zone with the most orange and yellow nodes, picked
+    local zones = GP:SkillUpZones()
+    check(#zones >= 1 and zones[1].nodes[1].kind == "Herb Gathering", "zones with herbs that raise Herbalism 30")
+    for _, z in ipairs(zones) do
+        for _, e in ipairs(z.nodes) do check(e.kind ~= "Mining", "nothing for a profession you don't have") end
+    end
+    Click(GP.ui.skillUp)
+    check(logHas("where to skill up"), "listed in chat")
+    local on = 0
+    for _, sw in ipairs(GP.ui.kindSwitches) do if rawget(sw, "entry") and sw:IsShown() and sw:IsOn() then on = on + 1 end end
+    check(on > 0 and ui.newZone.getter() == zones[1].mapID, "the best zone with its nodes picked")
+    GP.FAKE_RANKS = { ["Herb Gathering"] = 0, Mining = 0 }
+    Click(GP.ui.skillUp)
+    check(logHas("neither Herbalism nor Mining"), "no profession: says so")
+    GP.FAKE_RANKS = nil
+    SlashCmdList.GATHERLINE("skill")
+    GP:OpenConfig("routes")
 end
 
 STEP("without GatherMate2")

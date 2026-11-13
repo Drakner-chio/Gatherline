@@ -190,7 +190,7 @@ ns.TRANSLATIONS.deDE = {
     ["%s is switched on and has %d routes. Bring them over, then switch it off: both drawing the same routes is just clutter."] = "%s ist eingeschaltet und hat %d Routen. Übernimm sie und schalte es dann aus: Beide zeichnen sonst dieselben Routen doppelt.",
     ["To bring over routes from GatherPath Plus or GatherPath Forever, switch that addon on for one login, then come back here. (It happens by itself the first time, when Gatherline has no routes yet.)"] = "Um Routen aus GatherPath Plus oder GatherPath Forever zu übernehmen, schalte das Addon für einen Login ein und komm hierher zurück. (Beim ersten Mal, solange Gatherline noch keine Routen hat, passiert das von selbst.)",
     ["Made from"] = "Entstanden aus",
-    ["Gatherline grew out of GatherPath Forever by severd8 (MIT licence), whose route solver it still uses. The walking search in Routing/ is Shortest Path Forever's, by cjber (GPL-3.0), and its walking maps come from Shortest Path Forever itself. So Gatherline is under GPL-3.0 too."] = "Gatherline ist aus GatherPath Forever von severd8 (MIT-Lizenz) entstanden und nutzt noch dessen Routenberechnung. Die Wegsuche in Routing/ stammt aus Shortest Path Forever von cjber (GPL-3.0), die Laufkarten kommen von Shortest Path Forever selbst. Deshalb steht Gatherline ebenfalls unter GPL-3.0.",
+    ["Gatherline grew out of GatherPath Forever by severd8 (MIT licence), whose route solver it still uses. The walking search in Routing/ is Shortest Path Forever's, by cjber (GPL-3.0), and its walking maps come from Shortest Path Forever itself. So Gatherline is under GPL-3.0 too. The skill each herb and ore needs comes from GatherLite by Wuild (MIT licence)."] = "Gatherline ist aus GatherPath Forever von severd8 (MIT-Lizenz) entstanden und nutzt noch dessen Routenberechnung. Die Wegsuche in Routing/ stammt aus Shortest Path Forever von cjber (GPL-3.0), die Laufkarten kommen von Shortest Path Forever selbst. Deshalb steht Gatherline ebenfalls unter GPL-3.0. Welchen Skill jedes Kraut und Erz braucht, stammt aus GatherLite von Wuild (MIT-Lizenz).",
 
     -- Namen
     ["%s yards"] = "%s Meter",
@@ -350,5 +350,14 @@ ns.TRANSLATIONS.deDE = {
     ["all your routes, the one that brings the most first"] = "alle deine Routen, die ertragreichste zuerst",
     ["share the route shown in your zone / add one a friend shared"] = "die Route in deiner Zone teilen / eine geteilte hinzufügen",
     ["best here"] = "beste hier",
+    -- Routen nach Skill (1.4.0)
+    ["Where to skill up"] = "Wo skillen?",
+    ["Looks through every zone for the herbs and ores that still raise your Herbalism or Mining (orange and yellow), lists the best zones in chat, and picks the best one here with those nodes on."] = "Sucht in allen Zonen nach Kräutern und Erzen, die deine Kräuterkunde oder deinen Bergbau noch steigern (orange und gelb), listet die besten Zonen im Chat und wählt hier die beste mit diesen Vorkommen aus.",
+    ["Only what I can gather"] = "Nur was ich abbauen kann",
+    ["List only the herbs and ores your Herbalism or Mining is high enough for. The number after each node is the skill it needs, in the game's colours: red you can't gather yet, orange and yellow raise your skill, green a little, grey no more."] = "Nur Kräuter und Erze zeigen, für die deine Kräuterkunde oder dein Bergbau reicht. Die Zahl hinter jedem Vorkommen ist der nötige Skill, in den Farben des Spiels: rot geht noch nicht, orange und gelb steigern deinen Skill, grün ein wenig, grau nicht mehr.",
+    ["you have neither Herbalism nor Mining yet (or the game doesn't say)."] = "du hast weder Kräuterkunde noch Bergbau (oder das Spiel verrät es nicht).",
+    ["with %s, no zone %s knows has nodes that still raise your skill."] = "mit %s hat keine Zone, die %s kennt, Vorkommen, die deinen Skill noch steigern.",
+    ["where to skill up with %s (orange always raises your skill, yellow usually):"] = "wo du mit %s skillen kannst (orange steigert immer, gelb meistens):",
+    ["where to skill up your Herbalism and Mining"] = "wo du Kräuterkunde und Bergbau skillen kannst",
 }
 ns.UseTranslations()

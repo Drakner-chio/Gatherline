@@ -290,7 +290,7 @@ end
 -- Loads the addon's files in .toc order
 function LoadAddon(dir)
     local ns = {}
-    for _, f in ipairs({ "Locale.lua", "Locale_deDE.lua", "Theme.lua", "Optimize.lua", "Core.lua", "Sources.lua", "Session.lua", "Share.lua", "Routing/PathGrid.lua", "Routing/Path.lua", "Routing/PathJobs.lua", "Walk.lua", "Navigation.lua", "Options.lua" }) do
+    for _, f in ipairs({ "Locale.lua", "Locale_deDE.lua", "Theme.lua", "Optimize.lua", "Core.lua", "Sources.lua", "Session.lua", "Share.lua", "Skills_Data.lua", "Skills.lua", "Routing/PathGrid.lua", "Routing/Path.lua", "Routing/PathJobs.lua", "Walk.lua", "Navigation.lua", "Options.lua" }) do
         local chunk = assert(loadfile(dir .. "/" .. f))
         chunk("Gatherline", ns)
     end

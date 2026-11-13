@@ -20,6 +20,8 @@ Core.lua
 Sources.lua
 Session.lua
 Share.lua
+Skills_Data.lua
+Skills.lua
 Pin.xml
 Routing\PathGrid.lua
 Routing\Path.lua

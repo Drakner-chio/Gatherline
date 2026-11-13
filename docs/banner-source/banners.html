@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: Grotesk; src: url("fonts/space-grotesk-latin-wght-normal.woff2"); font-weight: 300 700; }
+@font-face { font-family: Inter; src: url("fonts/inter-latin-wght-normal.woff2"); font-weight: 100 900; }
+:root {
+  --jade: #3fd0a0; --jade-hi: #5ce3b5; --jade-dim: #1f5445; --ink: #eef0f4; --text: #b9bec8; --muted: #8a909b;
+  --faint: #5f6570; --line: #23262c; --edge: #30343b; --panel: #14171b; --panel2: #191c21; --field: #0b0d10;
+  --ore: #e8964a; --herb: #7fd35a; --tin: #b9c4d6;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #08090b; font-family: Inter, sans-serif; color: var(--text); }
+.wrap { padding: 20px; display: flex; flex-direction: column; gap: 20px; width: 1240px; }
+.banner {
+  width: 1200px; height: 620px; position: relative; overflow: hidden; border-radius: 18px;
+  background: radial-gradient(ellipse at 78% 35%, #16302a 0%, #0f1714 38%, #0b0d10 72%);
+}
+.banner::after { content: ""; position: absolute; inset: 0; border: 1px solid #22302c; border-radius: 18px; pointer-events: none; }
+.card { height: 100%; padding: 44px 56px; display: grid; grid-template-columns: 450px 1fr; gap: 44px; position: relative; }
+.brand { position: absolute; top: 38px; left: 56px; display: flex; align-items: center; gap: 12px; }
+.brand img { width: 34px; height: 34px; }
+.brand span { font-family: Grotesk; font-weight: 700; font-size: 22px; color: var(--ink); letter-spacing: .2px; }
+.left { display: flex; flex-direction: column; justify-content: center; gap: 18px; padding-top: 36px; }
+.pill { align-self: flex-start; color: var(--jade); background: rgba(63,208,160,.1); border: 1px solid rgba(63,208,160,.45);
+        border-radius: 999px; padding: 4px 14px; font-family: Grotesk; font-weight: 600; font-size: 13px;
+        letter-spacing: 1.4px; text-transform: uppercase; }
+h2 { margin: 0; font-family: Grotesk; font-weight: 700; font-size: 50px; line-height: 1.04; color: var(--ink); letter-spacing: -1px; }
+h2 em { font-style: normal; color: var(--jade); }
+.lead { margin: 0; font-size: 19px; line-height: 1.5; color: var(--text); }
+.foot { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.right { position: relative; display: flex; align-items: center; justify-content: center; }
+
+/* window look (Gatherline's own UI) */
+.win { background: #0d0e11; border: 1px solid var(--edge); box-shadow: 0 24px 60px rgba(0,0,0,.65); font-size: 13px; color: var(--ink); }
+.win .head { height: 42px; background: #0b0c0e; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 9px; padding: 0 12px; }
+.win .head img { width: 22px; height: 22px; }
+.win .head b { font-family: Grotesk; font-size: 15px; }
+.win .head i { font-style: normal; color: var(--faint); font-size: 11px; margin-top: 3px; }
+.win .head .x { margin-left: auto; width: 22px; height: 22px; border: 1px solid #3a3e46; background: #1d1f24; color: var(--muted);
+                display: flex; align-items: center; justify-content: center; font-size: 11px; }
+.side { background: #090a0c; border-right: 1px solid var(--line); padding: 10px 0; }
+.side .g { color: var(--faint); font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; padding: 10px 14px 6px; }
+.side .t { display: flex; align-items: center; gap: 9px; padding: 7px 14px; color: var(--muted); font-size: 13px; }
+.side .t .ic { width: 13px; height: 13px; background: #2a2d33; border-radius: 2px; }
+.side .t.on { background: #191c21; color: var(--ink); box-shadow: inset 2px 0 0 var(--jade); }
+.side .t.on .ic { background: var(--jade-dim); }
+.rcard { background: var(--panel); border: 1px solid var(--line); position: relative; padding: 10px 12px 10px 18px; }
+.rcard .strip { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+.rcard .top { display: flex; align-items: center; gap: 6px; }
+.rcard .nm { flex: 1; background: var(--field); border: 1px solid #2c2f36; padding: 4px 8px; font-size: 12.5px; }
+.go { background: var(--jade); color: #07120e; font-weight: 600; font-size: 12px; padding: 5px 16px; }
+.ib { width: 22px; height: 22px; background: #1d1f24; border: 1px solid #3a3e46; color: var(--muted); font-size: 11px;
+      display: flex; align-items: center; justify-content: center; }
+.rcard .info { margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.55; display: flex; justify-content: space-between; align-items: center; }
+.dot { color: #4a4f58; margin: 0 5px; }
+.acc { color: var(--jade); }
+.sw { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 12px; }
+.sw .tr { width: 30px; height: 15px; background: var(--jade-dim); position: relative; }
+.sw .tr::after { content: ""; position: absolute; right: 2px; top: 2px; width: 11px; height: 11px; background: var(--jade); }
+.sw.off .tr { background: #2a2d33; } .sw.off .tr::after { left: 2px; right: auto; background: #8b9099; }
+
+/* tracker / arrow */
+.tracker { background: rgba(6,8,10,.88); border: 1px solid #2b3036; padding: 14px 18px; width: 340px; box-shadow: 0 20px 50px rgba(0,0,0,.6); }
+.tracker .t1 { font-family: Grotesk; font-weight: 700; color: var(--ink); font-size: 16px; display: flex; gap: 8px; align-items: center; }
+.tracker .t2 { color: #ffd34d; font-size: 14px; margin-top: 8px; }
+.tracker .t3 { color: var(--text); font-size: 13.5px; margin-top: 4px; }
+.chat { font-family: Inter; font-size: 14px; line-height: 1.6; color: #e9e9e9; text-shadow: 0 1px 2px #000; }
+.chat .gl { color: var(--jade); }
+.chip { display: inline-flex; align-items: center; gap: 8px; background: rgba(13,16,19,.92); border: 1px solid #2b3036;
+        padding: 8px 12px; font-size: 13px; color: var(--ink); box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+.chip b { color: var(--jade); font-weight: 600; }
+
+/* settings card */
+.set { background: var(--panel); border: 1px solid var(--line); padding: 14px 16px 16px; }
+.set .h { color: var(--muted); font-size: 10.5px; letter-spacing: 1.3px; text-transform: uppercase; display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.set .h::before { content: ""; width: 2px; height: 10px; background: var(--jade); }
+.sl { margin-bottom: 14px; }
+.sl .r { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink); }
+.sl .r b { color: var(--jade); font-weight: 600; }
+.sl .bar { height: 2px; background: #2a2d33; margin-top: 9px; position: relative; }
+.sl .bar .f { position: absolute; left: 0; top: 0; height: 2px; background: var(--jade); }
+.sl .bar .k { position: absolute; top: -4px; width: 10px; height: 10px; background: var(--ink); }
+.dd { background: var(--field); border: 1px solid #2c2f36; padding: 6px 10px; font-size: 13px; display: flex; justify-content: space-between; color: var(--ink); }
+.feat { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.feat .f { background: rgba(20,23,27,.9); border: 1px solid var(--line); padding: 14px 16px; }
+.feat .f b { display: block; font-family: Grotesk; color: var(--ink); font-size: 16px; margin-bottom: 4px; }
+.feat .f span { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.feat .f i { font-style: normal; color: var(--jade); font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; display: block; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- 1: the idea: round the mountain, not over it -->
+<section class="banner" id="b1"><div class="card">
+  <div class="brand"><img src="../../media/icon-400.png"><span>Gatherline</span></div>
+  <div class="left">
+    <div class="pill">Gathering routes</div>
+    <h2 style="font-size:46px">Round the cliffs, <em>not over them.</em></h2>
+    <p class="lead">Gatherline turns your GatherMate2 herb and ore nodes into the shortest loop – measured on foot over the real ground, not in straight lines.</p>
+    <p class="foot">Made for World of Warcraft: Forever · with Shortest Path Forever's walking maps</p>
+  </div>
+  <div class="right">
+    <svg width="620" height="520" viewBox="0 0 620 520">
+      <defs>
+        <radialGradient id="hill" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#2a3a33"/><stop offset="100%" stop-color="#16201c"/>
+        </radialGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- terrain: a long ridge across the middle -->
+      <rect x="10" y="10" width="600" height="500" rx="14" fill="#0f1513" stroke="#22302c"/>
+      <g fill="none" stroke="#24352f" stroke-width="1.4">
+        <ellipse cx="320" cy="258" rx="175" ry="58" fill="url(#hill)"/>
+        <ellipse cx="320" cy="258" rx="140" ry="42"/>
+        <ellipse cx="320" cy="258" rx="102" ry="28"/>
+        <ellipse cx="320" cy="258" rx="60" ry="14"/>
+      </g>
+      <text x="320" y="262" fill="#4a6359" font-family="Grotesk" font-size="12" letter-spacing="3" text-anchor="middle">CLIFFS</text>
+      <!-- straight-line loop: over the ridge, four times -->
+      <polyline points="130,150 150,365 280,392 250,128 380,138 410,372 520,352 500,160 130,150" fill="none" stroke="#6b717c" stroke-width="2.5" stroke-dasharray="7 7" opacity=".85"/>
+      <!-- ground loop: along one side, round the end, back along the other -->
+      <path d="M130,150 C 180,135 215,128 250,128 C 300,128 340,134 380,138 C 430,143 470,150 500,160
+               C 545,180 560,225 550,270 C 545,310 535,335 520,352 C 485,365 445,372 410,372
+               C 370,374 320,390 280,392 C 235,392 190,378 150,365 C 110,350 82,300 84,255 C 86,205 100,165 130,150 Z"
+            fill="none" stroke="#3fd0a0" stroke-width="5" filter="url(#glow)" stroke-linejoin="round"/>
+      <polygon points="557,240 545,262 565,258" fill="#3fd0a0"/>
+      <!-- nodes -->
+      <g stroke="#0b0d10" stroke-width="2">
+        <circle cx="130" cy="150" r="9" fill="#e8964a"/><circle cx="250" cy="128" r="9" fill="#b9c4d6"/>
+        <circle cx="380" cy="138" r="9" fill="#e8964a"/><circle cx="500" cy="160" r="9" fill="#e8964a"/>
+        <circle cx="150" cy="365" r="9" fill="#e8964a"/><circle cx="280" cy="392" r="9" fill="#e8964a"/>
+        <circle cx="410" cy="372" r="9" fill="#b9c4d6"/><circle cx="520" cy="352" r="9" fill="#e8964a"/>
+      </g>
+      <!-- legend -->
+      <g font-family="Inter" font-size="13" fill="#b9bec8">
+        <line x1="40" y1="478" x2="72" y2="478" stroke="#6b717c" stroke-width="2.5" stroke-dasharray="6 5"/><text x="82" y="482">straight lines</text>
+        <line x1="200" y1="478" x2="232" y2="478" stroke="#3fd0a0" stroke-width="4"/><text x="242" y="482">Gatherline, on foot</text>
+      </g>
+    </svg>
+  </div>
+</div></section>
+
+<!-- 2: the window -->
+<section class="banner" id="b2"><div class="card" style="grid-template-columns: 400px 1fr;">
+  <div class="brand"><img src="../../media/icon-400.png"><span>Gatherline</span></div>
+  <div class="left">
+    <div class="pill">Your routes</div>
+    <h2>Every zone.<br><em>Every loop.</em></h2>
+    <p class="lead">Pick a zone and what to gather – single nodes or whole kinds. Gatherline finds the loop, tells you how long a lap takes, and keeps it up to date as you find new nodes.</p>
+    <p class="foot">/gl opens the window · English and German</p>
+  </div>
+  <div class="right">
+    <div class="win" style="width: 640px; display: grid; grid-template-rows: 42px 1fr;">
+      <div class="head"><img src="../../media/icon-400.png"><b>Gatherline</b><i>v1.0.0</i><div class="x">✕</div></div>
+      <div style="display: grid; grid-template-columns: 150px 1fr; height: 420px;">
+        <div class="side">
+          <div class="g">Routes</div><div class="t on"><div class="ic"></div>My routes</div><div class="t"><div class="ic"></div>New route</div>
+          <div class="g">On the way</div><div class="t"><div class="ic"></div>Guidance</div><div class="t"><div class="ic"></div>Map &amp; lines</div><div class="t"><div class="ic"></div>No-go areas</div>
+          <div class="g">Gatherline</div><div class="t"><div class="ic"></div>About</div>
+        </div>
+        <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 9px;">
+          <div style="font-family: Grotesk; font-size: 17px; font-weight: 600;">My routes</div>
+          <div style="color: var(--muted); font-size: 12px; margin-top: -6px;">Your gathering loops, zone by zone.</div>
+          <div class="rcard"><div class="strip" style="background: var(--ore)"></div>
+            <div class="top"><div class="nm">The Barrens - Copper and Tin</div><div class="go">Start</div><div class="ib">⟳</div><div class="ib">✎</div><div class="ib">↻</div><div class="ib">✕</div></div>
+            <div class="info"><div>186 nodes<span class="dot">•</span>21,430 yards round<span class="dot">•</span>Ore<br>About 6 min a lap<span class="dot">•</span>passes within 185<span class="dot">•</span><span class="acc">over the ground</span></div><div class="sw"><div class="tr"></div>Show</div></div></div>
+          <div class="rcard"><div class="strip" style="background: var(--herb)"></div>
+            <div class="top"><div class="nm">The Barrens - Herbs</div><div class="go">Stop</div><div class="ib">⟳</div><div class="ib">✎</div><div class="ib">↻</div><div class="ib">✕</div></div>
+            <div class="info"><div>212 nodes<span class="dot">•</span>24,110 yards round<span class="dot">•</span>Herbs<br><span class="acc">Riding: stop 14/96, lap 2</span></div><div class="sw"><div class="tr"></div>Show</div></div></div>
+          <div class="rcard"><div class="strip" style="background: var(--tin)"></div>
+            <div class="top"><div class="nm">The Barrens - Silver Vein</div><div class="go">Start</div><div class="ib">⟳</div><div class="ib">✎</div><div class="ib">↻</div><div class="ib">✕</div></div>
+            <div class="info"><div>105 nodes<span class="dot">•</span>19,802 yards round<span class="dot">•</span>Ore<br>About 5 min a lap<span class="dot">•</span>passes within 185<span class="dot">•</span><span class="acc">over the ground</span></div><div class="sw off"><div class="tr"></div>Show</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 3: ride it -->
+<section class="banner" id="b3"><div class="card">
+  <div class="brand"><img src="../../media/icon-400.png"><span>Gatherline</span></div>
+  <div class="left">
+    <div class="pill">Start</div>
+    <h2>Click Start.<br><em>Just ride.</em></h2>
+    <p class="lead">Shortest Path Forever's arrow and tracker lead you to the route – from any zone, by flight, boat or portal – and round it, lap after lap.</p>
+    <p class="foot">Ride past a stop and it carries on from there · lap times in chat</p>
+  </div>
+  <div class="right">
+    <div style="position:absolute; right: 0; top: 70px;" class="tracker">
+      <div class="t1"><img src="../../media/icon-400.png" width="20">The Barrens - Copper and Tin</div>
+      <div class="t2">Stop 3 of 10: 3/42: Copper Vein ×2, Tin Vein</div>
+      <div class="t3">Lap 2</div>
+    </div>
+    <svg width="660" height="300" viewBox="0 0 660 300" style="position:absolute; left: 0; top: 190px;">
+      <defs><filter id="g3"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <path d="M10 210 C 80 205, 150 200, 230 175 C 300 152, 320 110, 380 100 C 440 90, 470 140, 530 140 C 580 140, 620 110, 660 95" fill="none" stroke="#3fd0a0" stroke-width="5" filter="url(#g3)" stroke-linecap="round"/>
+      <g fill="#0b0d10" stroke="#3fd0a0" stroke-width="3">
+        <circle cx="230" cy="175" r="13"/><circle cx="380" cy="100" r="13"/><circle cx="530" cy="140" r="13"/>
+      </g>
+      <g font-family="Grotesk" font-weight="700" font-size="13" fill="#3fd0a0" text-anchor="middle">
+        <text x="230" y="180">3</text><text x="380" y="105">4</text><text x="530" y="145">5</text>
+      </g>
+      <g transform="translate(110 204) rotate(78)" filter="url(#g3)">
+        <path d="M0 -40 L 26 26 L 0 12 L -26 26 Z" fill="#3fd0a0" stroke="#0b0d10" stroke-width="3"/>
+      </g>
+    </svg>
+    <div style="position:absolute; left: 10px; bottom: 50px;" class="chat">
+      <span class="gl">Gatherline</span>: lap 1 of The Barrens - Copper and Tin done in 6:12 min.<br>
+      <span class="gl">Gatherline</span>: lap 2 of The Barrens - Copper and Tin done in 5:58 min.
+    </div>
+  </div>
+</div></section>
+
+<!-- 4: your pace -->
+<section class="banner" id="b4"><div class="card">
+  <div class="brand"><img src="../../media/icon-400.png"><span>Gatherline</span></div>
+  <div class="left">
+    <div class="pill">Guidance</div>
+    <h2>Your pace, <em>your stops.</em></h2>
+    <p class="lead">Decide how close you need to get before the arrow moves on, how many stops it shows ahead – and whether a stop is called <span style="color:var(--ink)">Stop 3/42</span>, <span style="color:var(--ink)">Copper Vein ×2</span> or both.</p>
+    <p class="foot">Turn any route round with one click · set a number of laps or ride until you stop</p>
+  </div>
+  <div class="right" style="flex-direction: column; gap: 14px; align-items: stretch; padding: 30px 30px 30px 40px;">
+    <div class="set">
+      <div class="h">Moving on</div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 26px;">
+        <div class="sl"><div class="r">Next stop when this close <b>40 yards</b></div><div class="bar"><div class="f" style="width:19%"></div><div class="k" style="left:18%"></div></div></div>
+        <div class="sl"><div class="r">Stops shown ahead <b>10</b></div><div class="bar"><div class="f" style="width:35%"></div><div class="k" style="left:34%"></div></div></div>
+      </div>
+      <div class="sl" style="width: 48%; margin-bottom: 0;"><div class="r">Laps <b>Until I stop</b></div><div class="bar"><div class="f" style="width:0%"></div><div class="k" style="left:0%"></div></div></div>
+    </div>
+    <div class="set">
+      <div class="h">Stop names</div>
+      <div style="display:flex; align-items:center; gap: 16px; font-size: 13px; color: var(--ink);">Call stops by <div class="dd" style="flex:1">Both: 3/42: Copper Vein ×2 <span style="color:var(--muted)">▾</span></div></div>
+    </div>
+    <div class="set">
+      <div class="h">On the map while you ride</div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 26px;">
+        <div class="sw"><div class="tr"></div>Show arrows</div><div class="sw off"><div class="tr"></div>Reverse direction</div>
+        <div class="sw"><div class="tr"></div>Line to the route</div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 5: and more -->
+<section class="banner" id="b5"><div class="card" style="grid-template-columns: 400px 1fr;">
+  <div class="brand"><img src="../../media/icon-400.png"><span>Gatherline</span></div>
+  <div class="left">
+    <div class="pill">And more</div>
+    <h2>Made to be <em>used again and again.</em></h2>
+    <p class="lead">A good route is worth a few minutes of working out – you ride it every day. Gatherline takes the time to get it right, then keeps out of the way.</p>
+    <p class="foot">Needs GatherMate2 · Shortest Path Forever recommended</p>
+  </div>
+  <div class="right">
+    <div class="feat" style="width: 620px;">
+      <div class="f"><i>No-go areas</i><b>Keep out</b><span>Draw parts of a zone on the world map – routes go round them.</span></div>
+      <div class="f"><i>Lines</i><b>Along the ground</b><span>The line on your map follows the way you actually ride.</span></div>
+      <div class="f"><i>Passes within</i><b>See it, skip the walk</b><span>With Find Herbs or Find Minerals the route only comes close enough to see each node.</span></div>
+      <div class="f"><i>New nodes</i><b>Join by themselves</b><span>Found a new vein? It's added where it costs the least walking.</span></div>
+      <div class="f"><i>Skip list</i><b>No more poor ore</b><span>Right-click a node on New route to leave it out of every route.</span></div>
+      <div class="f"><i>Coming from GatherPath?</i><b>Bring your routes</b><span>Routes from GatherPath Forever come over by themselves.</span></div>
+    </div>
+  </div>
+</div></section>
+
+</div>
+</body>
+</html>

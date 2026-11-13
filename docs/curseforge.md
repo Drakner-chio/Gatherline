@@ -1,55 +1,83 @@
+![Gatherline – round the cliffs, not over them](https://raw.githubusercontent.com/Drakner-chio/gatherline/main/docs/images/gatherline-1.jpg)
+
 ## Gathering routes over the real ground
 
-**Gatherline** turns your GatherMate2 herb and ore nodes into the shortest gathering loop – measured over the real terrain, drawn on your world map and minimap, and ridden with an arrow that leads you round it.
+**Gatherline** turns your GatherMate2 herb and ore nodes into the shortest gathering loop – measured on foot over the real terrain, drawn on your world map and minimap, and ridden with an arrow that leads you round it.
+
+- **Over the ground, not through it:** routes are measured on the game's own walking maps (from Shortest Path Forever) – round mountains, cliffs and lakes instead of straight over them
+- **Never worse than a straight line:** five candidate loops are walked leg by leg and polished, and the shortest on foot wins
+- **Lines along the ground:** the route on your map follows the way you actually ride
+- **Passes within:** with Find Herbs or Find Minerals on, the route only comes close enough to see each node
+- **Start:** ride any route with an arrow and tracker, from anywhere, lap after lap
 
 Made for **World of Warcraft: Forever**.
 
-## Routes that know the ground
+![Every zone, every loop](https://raw.githubusercontent.com/Drakner-chio/gatherline/main/docs/images/gatherline-2.jpg)
 
-Pick a zone and what to gather – single nodes like *Peacebloom* or *Copper Vein*, or whole kinds. Gatherline finds the loop.
+## Every zone, every loop
 
-- **Over the ground, not through it:** with **Shortest Path Forever** installed, every route is measured on the game's own walking maps. Gatherline works out five candidate loops, walks each of them leg by leg, polishes the best ones and keeps the shortest on foot – round mountains, cliffs and lakes instead of straight over them.
-- **Never worse than a straight line:** the plain straight-line loop is always one of the candidates. In tests on the real walking maps, routes in mountainous zones like Dun Morogh and Loch Modan came out 20–29% shorter on foot.
-- **Lines along the ground:** the route on your map follows the way you'd actually ride.
-- **Passes within:** with Find Herbs or Find Minerals on you see a node before you reach it, so the route only has to come that close. It cuts corners, and nodes close together become one stop.
+Type `/gl`, pick a zone and what to gather – single nodes like *Peacebloom* or *Copper Vein*, or whole kinds – and Gatherline finds the loop. Every route shows its nodes, its length on foot and how long a lap takes. Give it its own colour, rename it, rebuild it when GatherMate2 knows more, or turn it round with one click.
 
-## Ride it
+In tests on the real walking maps, routes in mountainous zones like **Dun Morogh** and **Loch Modan** came out **20–29% shorter on foot** than straight-line routes. In flat zones the straight-line loop is often already the best – and then that's the one you get.
+
+![Click Start, just ride](https://raw.githubusercontent.com/Drakner-chio/gatherline/main/docs/images/gatherline-3.jpg)
+
+## Click Start. Just ride.
 
 Click **Start** on a route and Shortest Path Forever's arrow and tracker take over:
 
 - From **anywhere** – another zone, another continent – it leads you to the route first, with flights, boats and portals, then round the loop from the nearest stop.
 - **Lap after lap**, or a set number of laps, with each lap's time in chat.
-- **Your pace:** set how close you need to get before it moves on to the next stop, and how many stops it shows ahead.
-- **Stops by name:** call them *Stop 3/42*, by what's there – *Copper Vein ×2, Tin Vein* – or both.
 - Ride past a stop toward a later one and it simply carries on from there.
-- **Turn a route round** with one click.
+
+![Your pace, your stops](https://raw.githubusercontent.com/Drakner-chio/gatherline/main/docs/images/gatherline-4.jpg)
+
+## Your pace, your stops
+
+The **Guidance** page decides how the ride feels:
+
+- **Next stop when this close:** move on to the next stop 15 to 150 yards before you reach it
+- **Stops shown ahead:** how many numbered stops the map and tracker show
+- **Stop names:** *Stop 3/42*, what's there – *Copper Vein ×2, Tin Vein* – or both
+- **Arrows** along every route, and a **line to the route** on the minimap
+
+![And more](https://raw.githubusercontent.com/Drakner-chio/gatherline/main/docs/images/gatherline-5.jpg)
 
 ## And more
 
-- **No-go areas:** draw parts of a zone on the world map that your routes keep out of.
-- **New nodes join by themselves** wherever they add the least walking.
-- **Skip list:** right-click poor or wilted nodes to leave them out everywhere.
-- **Bring your routes over** from GatherPath Forever.
-- A clean, dark window: My routes, New route, Guidance, Map & lines, No-go areas and About – `/gl` opens it.
-- **English and German**, following your game client.
+- **No-go areas:** draw parts of a zone on the world map that your routes keep out of
+- **New nodes join by themselves** wherever they add the least walking
+- **Skip list:** right-click poor or wilted nodes to leave them out everywhere
+- **Coming from GatherPath Forever?** Your routes come over by themselves
+- **English and German**, following your game client
 
 ## Requirements
 
-- **GatherMate2** (required) – the nodes routes are made from.
-- **Shortest Path Forever** with **ForeverCore** (recommended) – walking maps and guidance. Without it routes use straight lines and there's no Start.
+| Addon | What for | |
+|---|---|---|
+| **GatherMate2** | The nodes routes are made from | required |
+| **Shortest Path Forever** (with **ForeverCore**) | Walking maps for routes over the ground, and the arrow and tracker for Start | recommended – without it routes use straight lines and there's no Start |
+
+The **About** page in the window shows whether everything is there.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
 | `/gl` | Open the window |
+| `/gl new` | Make a new route |
 | `/gl start`, `/gl stop` | Ride the route shown in your zone / stop |
 | `/gl reverse` | Turn the route round |
 | `/gl laps N` | Laps to ride (0 = until you stop) |
 | `/gl reach N` | How close (yards) before the next stop |
 | `/gl names number\|nodes\|both` | What stops are called |
 | `/gl show`, `/gl hide` | Show or hide all lines |
+| `/gl skipped` | Nodes on your skip list |
+
+## Good to know
+
+Working out a route takes a moment – for a big zone with hundreds of nodes a few minutes. Gatherline takes the time because a good route is one you ride again and again; the game keeps running smoothly meanwhile, and you can watch the progress on the route's card.
 
 ## Credits
 
-Gatherline grew out of **GatherPath Forever** by severd8 (MIT) and uses the walking search of **Shortest Path Forever** by cjber (GPL-3.0). Licensed under GPL-3.0. Source: [github.com/Drakner-chio/gatherline](https://github.com/Drakner-chio/gatherline)
+Gatherline grew out of **GatherPath Forever** by severd8 (MIT) and uses the walking search of **Shortest Path Forever** by cjber (GPL-3.0). Licensed under GPL-3.0 – source on [GitHub](https://github.com/Drakner-chio/gatherline).

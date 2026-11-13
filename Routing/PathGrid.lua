@@ -1,4 +1,4 @@
--- Copied unchanged from Shortest Path Forever (cjber, GPL-3.0-or-later), Routing/PathGrid.lua,
+-- Copied from Shortest Path Forever (cjber, GPL-3.0-or-later), Routing/PathGrid.lua, changed only in Data(),
 -- https://github.com/cjber/shortest-path-forever. Gatherline uses its own copy, under its own
 -- namespace, reading the walking maps Shortest Path Forever loads (ShortestPathForeverPathData).
 ---@class SPFNamespace
@@ -118,8 +118,26 @@ local function Expansions(count)
 end
 
 -- Compressed terrain is bundled with the main addon; decoded clusters stay lazy.
+-- Gatherline: the walking maps are Shortest Path Forever's table, but the strings
+-- decoded from them are kept in our own tables. Both copies of this file drop
+-- decoded strings to save memory; sharing them, each one dropped strings the
+-- other was still reading (a nil "s" in edgesAt/metadata).
+local views = {}
 local function Data(map)
-	return ShortestPathForeverPathData and ShortestPathForeverPathData[map]
+	local shared = ShortestPathForeverPathData and ShortestPathForeverPathData[map]
+	if not shared then
+		return nil
+	end
+	local view = views[map]
+	if not view or view.shared ~= shared then
+		local d = shared
+		if shared.packed then
+			d = setmetatable({ graph = {}, grid = {}, height = {}, floor = {} }, { __index = shared })
+		end
+		view = { shared = shared, d = d }
+		views[map] = view
+	end
+	return view.d
 end
 
 local states = {}

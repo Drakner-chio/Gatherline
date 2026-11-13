@@ -1,5 +1,12 @@
 # Gatherline
 
+## v1.0.1
+
+- Fixed Lua errors in `Routing/PathGrid.lua` ("bad argument #1 to 'byte'") while a route was
+  worked out: Gatherline's walking search and Shortest Path Forever's own one shared the
+  decoded walking maps, and each dropped pieces the other was still reading. That could
+  break Shortest Path Forever's own directions too. Gatherline now keeps its own.
+
 ## v1.0.0 – first release
 
 **Gatherline** turns your GatherMate2 herb and ore nodes into the shortest gathering loop,

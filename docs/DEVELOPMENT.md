@@ -1,8 +1,58 @@
-# Gatherline — developer notes
+# Gatherline – development notes
+
+Everything that is only relevant for working on Gatherline. The player-facing
+description is the [README](../README.md).
+
+## Releasing
+
+One click: go to **Actions → Release → Run workflow**, enter a version like `1.1.0` or
+`1.1.0-beta1` and start it. The workflow creates the tag itself. Versions with `beta`
+or `alpha` are uploaded as test versions.
+
+Alternatively push a tag yourself:
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+The GitHub Action builds the zip with the [BigWigs Packager](https://github.com/BigWigsMods/packager)
+(`.pkgmeta`: no libraries, nothing to download; `README.md`, `docs/`, `tests/` and
+`media/icon-400.png` stay out of the zip; `## Version: @project-version@` is filled in from
+the tag; `CHANGELOG.md` becomes the release notes) and attaches it to a GitHub release. It
+also uploads to the stores that are set up:
+
+| Store | In `Gatherline.toc` | GitHub secret |
+|---|---|---|
+| CurseForge | `## X-Curse-Project-ID: …` | `CF_API_KEY` ([API tokens](https://authors.curseforge.com/account/api-tokens)) |
+| Wago Addons | `## X-Wago-ID: …` | `WAGO_API_TOKEN` (Wago developer dashboard) |
+
+Secrets go into the GitHub repo under *Settings → Secrets and variables → Actions*.
+
+The CurseForge project description is in [`curseforge.md`](curseforge.md), the project
+logo (400×400) in [`../media/icon-400.png`](../media/icon-400.png); both logos are drawn by
+[`logo.py`](logo.py). On CurseForge, set GatherMate2 as a *required dependency* and
+Shortest Path Forever as an *optional dependency*.
+
+## Tests
+
+```bash
+lua5.1 tests/run.lua                                         # everything, with a fake game API
+luajit tests/walk_spec.lua ../shortest-path-forever          # walking search on the real walking maps
+luajit -joff tests/walk_bench2.lua ../shortest-path-forever dunmorogh   # straight vs. ground, real yards
+```
+
+`../shortest-path-forever` is a checkout of Shortest Path Forever (for its `Nav/` files and
+`tools/load_nav.lua`).
+
+## Testing in the game
+
+- New files (textures, Lua files) are only picked up after restarting WoW; `/reload` is not enough.
+- Errors: install BugSack + BugGrabber.
 
 Gathering routes for **World of Warcraft: Forever** (interface 16001): the shortest loop through the herb and ore nodes GatherMate2 has recorded, measured over the real ground with Shortest Path Forever's walking maps, drawn on the world map and the minimap, and ridden with Shortest Path Forever's guidance.
 
-- Private addon (Alex and friends). Licence GPL-3.0-or-later (`LICENSE`), because `Routing/` is Shortest Path Forever's GPL code.
+- Licence GPL-3.0-or-later (`LICENSE`), because `Routing/` is Shortest Path Forever's GPL code.
 - Grew out of GatherPath Forever 1.12.1 by severd8 (MIT, `LICENSE-MIT-GatherPathForever`): the route solver (`Optimize.lua`) and much of `Core.lua` are still that code. Everything a player sees (`Theme.lua`, `Options.lua`, `Locale*.lua`, the logo) is Gatherline's own. The look is inspired by modern flat UIs (dark panels, hairline edges, one accent); no code or art from EllesmereUI (all rights reserved) or anyone else.
 - Before 1.0.0 it was called GatherPath Plus (`GatherPathPlusDB`, `/gpp`).
 
@@ -14,7 +64,7 @@ Gathering routes for **World of Warcraft: Forever** (interface 16001): the short
 - `Options.lua` — pages: My routes (rows 92 apart as cards: colour strip at the left (`Swatch`), name, Start (primary), then icon buttons Turn round, Edit, Rebuild, Delete; two info lines; Show), New route, Guidance (Moving on, Stop names, On the map while you ride), Map & lines, No-go areas (`taboo` key internally), About (status of GatherMate2 / Shortest Path / walking map, Bring routes over, credits). `GP.ui` keeps the widgets the tests use.
 - `Core.lua` — settings, GatherMate2, routes, drawing, minimap button, `/gl` (`/gatherline`), events, bringing routes over (`GP:ImportSource`, `GP:ImportRoutes(quiet)`: from `GatherPathPlusDB` or `GatherPathForeverDB`, skips same zone + name, copies no-go areas of zones without any, merges the skip list; by itself at `PLAYER_LOGIN` when Gatherline has no routes and `db.imported` isn't set).
 - `Optimize.lua` — the solver (see below), `Walk.lua` + `Routing/` — walking search, `Navigation.lua` — Start.
-- `Media/Logo.tga` — 64 x 64, made with a short PIL script (a loop with four nodes and an arrow on a dark rounded square).
+- `media/Logo.tga` — 64 x 64, and `media/icon-400.png` (CurseForge), both from `docs/logo.py` (a loop with four nodes and an arrow on a dark rounded square).
 
 ## Routes
 

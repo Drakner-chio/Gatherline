@@ -19,7 +19,7 @@ local sqrt, max, min, floor, cos, sin = math.sqrt, math.max, math.min, math.floo
 local function Print(msg) print(T.CHAT_PREFIX .. ": " .. msg) end
 GP.Print = Print
 
-GP.ICON = "Interface\\AddOns\\" .. ADDON .. "\\Media\\Logo"
+GP.ICON = "Interface\\AddOns\\" .. ADDON .. "\\media\\Logo"
 GP.LOGO_TEXT = "|T" .. GP.ICON .. ":0|t"
 
 GP.DEFAULTS = {

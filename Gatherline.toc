@@ -2,12 +2,13 @@
 ## Title: |cff3fd0a0Gatherline|r
 ## Notes: Gathering routes over the real ground, and a guide round them.
 ## Notes-deDE: Sammelrouten über das echte Gelände, und eine Führung drumherum.
-## Author: Alex
-## Version: 1.0.0
-## IconTexture: Interface\AddOns\Gatherline\Media\Logo
+## Author: Drakner-chio
+## Version: @project-version@
+## IconTexture: Interface\AddOns\Gatherline\media\Logo
 ## OptionalDeps: GatherMate2, ShortestPathForever, GatherPathPlus, GatherPathForever
 ## SavedVariables: GatherlineDB
 ## X-License: GPL-3.0-or-later
+## X-Website: https://github.com/Drakner-chio/gatherline
 ## X-Category: Map
 
 Locale.lua

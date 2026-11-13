@@ -10,7 +10,7 @@ ns.Theme = T
 
 T.NAME = "Gatherline"
 T.SHORT = "Gatherline"
-T.LOGO = "Interface\\AddOns\\" .. tostring(ADDON) .. "\\Media\\Logo"
+T.LOGO = "Interface\\AddOns\\" .. tostring(ADDON) .. "\\media\\Logo"
 T.FONT = "Fonts\\ARIALN.TTF"   -- in every client, every language's letters
 T.ACCENT_HEX = "3fd0a0"
 -- Chat lines start with the logo and the name in jade

@@ -117,7 +117,7 @@ end
 
 local function BuildRoutes(p)
     T.RowLabel(p, "Zone", 0, 0)
-    local zone = T.Dropdown(p, 300, {}, function(k) return GP:MapName(k) end,
+    local zone = T.Dropdown(p, 250, {}, function(k) return GP:MapName(k) end,
         function() return routesZone end, function(k) routesZone = k; GP:RefreshConfig() end)
     zone:SetPoint("TOPLEFT", DROP_X, 0)
     zone.menuScroll = 300
@@ -128,6 +128,11 @@ local function BuildRoutes(p)
     make:SetScript("OnClick", function() GP:NewRouteInWindow(routesZone) end)
     T.Tooltip(make, "New route", "Make a route in the zone picked here.")
     refs.routesNew = make
+    local import = FlatButton(p, "Import", 96)
+    import:SetPoint("RIGHT", make, "LEFT", -6, 0)
+    import:SetScript("OnClick", function() GP:ShareWindow() end)
+    T.Tooltip(import, "Import", "Add a route a friend shared with you: paste the line they sent.")
+    refs.routesImport = import
 
     local holder = CreateFrame("Frame", nil, p)
     holder:SetPoint("TOPLEFT", 0, -34)
@@ -191,9 +196,15 @@ local function BuildRoutes(p)
             "Ride this loop the other way round. The arrows turn with it, and a ride on it carries on the new way.",
             function(route) GP:ReverseRoute(route) end)
         r.turn:SetPoint("RIGHT", r.edit, "LEFT", -4, 0)
+        r.share = Action("Interface\\Icons\\INV_Letter_15", "Share",
+            "A line of text with this route in it, to send to a friend: they click Import and get exactly this loop.",
+            function(route) GP:ShareWindow(route) end)
+        r.share:SetPoint("RIGHT", r.turn, "LEFT", -4, 0)
+        refs.shareButtons = refs.shareButtons or {}
+        refs.shareButtons[i] = r.share
         r.ride = FlatButton(r, "Start", 72, 24)
         r.ride:SetPrimary(true)
-        r.ride:SetPoint("RIGHT", r.turn, "LEFT", -8, 0)
+        r.ride:SetPoint("RIGHT", r.share, "LEFT", -8, 0)
         r.ride:SetScript("OnClick", function(self)
             if self.disabled or not r.route then return end
             if GP:IsNavigating(r.route) then GP:StopNav() else GP:StartNav(r.route) end
@@ -223,6 +234,7 @@ local function BuildRoutes(p)
         zone.keys = RoutesZoneChoices()
         zone:Refresh()
         local routes = routesZone and GP:RoutesOn(routesZone) or {}
+        local best = routesZone and GP:BestRouteOn(routesZone)
         for i, route in ipairs(routes) do
             local r = Row(i)
             r.route = route
@@ -260,7 +272,10 @@ local function BuildRoutes(p)
                 if route.walked then parts[#parts + 1] = "|cff" .. T.ACCENT_HEX .. L["over the ground"] .. "|r" end
                 local text = line1 .. "\n" .. table.concat(parts, dot)
                 local stats = GP:StatsLine(route)
-                if stats then text = text .. "\n|cffb8bcc4" .. stats .. "|r" end
+                if stats then
+                    if best == route then stats = stats .. "  |cffffd100" .. L["best here"] .. "|r" end
+                    text = text .. "\n|cffb8bcc4" .. stats .. "|r"
+                end
                 r.info:SetText(text)
             end
             r.rebuild:SetDisabled(GP:Busy())
@@ -268,6 +283,7 @@ local function BuildRoutes(p)
             r.ride:SetText(riding and L["Stop"] or L["Start"])
             r.ride:SetDisabled(not riding and (route.working or GP:NodeCount(route) < 2 or not GP:CanNavigate()))
             r.turn:SetDisabled(route.working or GP:NodeCount(route) < 2)
+            r.share:SetDisabled(route.working or GP:NodeCount(route) < 2)
             if riding and not route.working then
                 local first, rest = r.info:GetText():match("^([^\n]*)\n[^\n]*(.*)$")
                 r.info:SetText((first or r.info:GetText()) .. "\n|cff" .. T.ACCENT_HEX .. GP:NavStatus() .. "|r" .. (rest or ""))

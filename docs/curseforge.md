@@ -49,6 +49,8 @@ The **Guidance** page decides how the ride feels:
 
 - **No-go areas:** draw parts of a zone on the world map that your routes keep out of
 - **New nodes join by themselves** wherever they add the least walking
+- **Share routes:** one line of text, and your friends ride exactly your loop
+- **Your best route:** see which route brings the most gold or nodes an hour
 - **Skip list:** right-click poor or wilted nodes to leave them out everywhere
 - **Works with GatherMate2 and GatherLite**, including GatherLite's built-in WoW Forever node database
 - **Coming from GatherPath Forever?** Your routes come over by themselves
@@ -79,6 +81,8 @@ The **About** page in the window shows whether everything is there.
 | `/gl skipped` | Nodes on your skip list |
 | `/gl empty N` | Minutes a gathered stop is skipped (0 = never) |
 | `/gl stats` | Statistics of the route you ride |
+| `/gl stats all` | All your routes, best first |
+| `/gl share`, `/gl import` | Share a route / add a shared one |
 
 ## Good to know
 

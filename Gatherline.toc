@@ -19,6 +19,7 @@ Optimize.lua
 Core.lua
 Sources.lua
 Session.lua
+Share.lua
 Pin.xml
 Routing\PathGrid.lua
 Routing\Path.lua

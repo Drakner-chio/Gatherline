@@ -2129,6 +2129,8 @@ local function Help()
     print("  |cffffd100/gl reverse|r  " .. L["turn the route you ride (or the one shown in your zone) round"])
     print("  |cffffd100/gl empty N|r  " .. L["minutes a gathered stop is skipped (0 = never)"])
     print("  |cffffd100/gl stats|r, |cffffd100/gl stats reset|r  " .. L["the statistics of the route you ride (or the one shown in your zone)"])
+    print("  |cffffd100/gl stats all|r  " .. L["all your routes, the one that brings the most first"])
+    print("  |cffffd100/gl share|r, |cffffd100/gl import|r  " .. L["share the route shown in your zone / add one a friend shared"])
     print("  |cffffd100/gl walk|r  " .. L["test: yards on foot from you to the next stops"])
 end
 
@@ -2181,7 +2183,9 @@ SlashCmdList.GATHERLINE = function(msg)
             or L["a ride skips stops whose nodes you all gathered in the last %d minutes. |cffffd100/gl empty N|r to change it."]:format(m))
     elseif cmd == "stats" then
         local route = GP:NavRoute() or GP:NavCandidate()
-        if not route then
+        if (msg or ""):lower():match("^%s*%S+%s+all") then
+            GP:PrintRanking()
+        elseif not route then
             Print(L["no route shown in your zone."])
         elseif (msg or ""):lower():match("^%s*%S+%s+reset") then
             GP:ResetStats(route)
@@ -2195,6 +2199,11 @@ SlashCmdList.GATHERLINE = function(msg)
                 Print(L["%s has no laps yet. Ride it with Start; each lap counts."]:format(route.name))
             end
         end
+    elseif cmd == "share" then
+        local route = GP:NavRoute() or GP:NavCandidate()
+        if route then GP:ShareWindow(route) else Print(L["no route shown in your zone."]) end
+    elseif cmd == "import" then
+        GP:ShareWindow()
     elseif cmd == "walk" then
         GP:WalkTest()
     elseif cmd == "show" or cmd == "hide" then

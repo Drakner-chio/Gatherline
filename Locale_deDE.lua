@@ -332,5 +332,23 @@ ns.TRANSLATIONS.deDE = {
     ["statistics of %s reset."] = "Statistik von %s zurückgesetzt.",
     ["%s: laps %d, nodes gathered %d. %s"] = "%s: Runden %d, Vorkommen abgebaut %d. %s",
     ["%s has no laps yet. Ride it with Start; each lap counts."] = "%s hat noch keine Runden. Reite sie mit Start, jede Runde zählt.",
+    -- Routen teilen, beste Route (1.3.0)
+    ["Import"] = "Importieren",
+    ["Add a route a friend shared with you: paste the line they sent."] = "Eine Route hinzufügen, die dir ein Freund geschickt hat: die Zeile einfügen.",
+    ["Share"] = "Teilen",
+    ["A line of text with this route in it, to send to a friend: they click Import and get exactly this loop."] = "Eine Textzeile mit dieser Route, um sie einem Freund zu schicken: Er klickt auf Importieren und bekommt genau diese Runde.",
+    ["that isn't a Gatherline route."] = "das ist keine Gatherline-Route.",
+    ["that route is from a newer Gatherline. Update Gatherline, then try again."] = "die Route stammt aus einem neueren Gatherline. Gatherline aktualisieren und noch mal versuchen.",
+    ["that route didn't come through whole. Copy it again, all of it."] = "die Route ist nicht vollständig angekommen. Bitte noch mal ganz kopieren.",
+    ["added |cffffd100%s|r in %s: %d stops, %s round."] = "|cffffd100%s|r in %s hinzugefügt: %d Wegpunkte, %s pro Runde.",
+    ["no route ridden long enough to compare yet (10 minutes each)."] = "noch keine Route lange genug geritten, um sie zu vergleichen (je 10 Minuten).",
+    ["your routes, best first:"] = "deine Routen, die beste zuerst:",
+    ["Share %s"] = "%s teilen",
+    ["Copy this line (Ctrl+C) and send it to a friend. In Gatherline they click Import and paste it."] = "Diese Zeile kopieren (Strg+C) und einem Freund schicken. Er klickt in Gatherline auf Importieren und fügt sie ein.",
+    ["Import a route"] = "Route importieren",
+    ["Paste a route a friend shared (Ctrl+V), then click Import."] = "Die Route eines Freundes einfügen (Strg+V), dann auf Importieren klicken.",
+    ["all your routes, the one that brings the most first"] = "alle deine Routen, die ertragreichste zuerst",
+    ["share the route shown in your zone / add one a friend shared"] = "die Route in deiner Zone teilen / eine geteilte hinzufügen",
+    ["best here"] = "beste hier",
 }
 ns.UseTranslations()

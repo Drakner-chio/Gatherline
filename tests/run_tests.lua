@@ -1740,6 +1740,82 @@ do
     check(GP:SourceNames() == "GatherMate2", "GatherLite gone again")
 end
 
+STEP("sharing a route")
+do
+    local route
+    for _, r in ipairs(GP.db.routes) do if not r.working and GP:NodeCount(r) >= 4 then route = r break end end
+    check(route ~= nil, "a route to share")
+    local before = #GP.db.routes
+    route.drawn = { 0.1234, 0.5678, 0.2, 0.3, 0.9999, 0, -0.05, 1.02 }
+    route.walked, route.walkFactor = 3, 1.25
+    route.kinds = { ["Herb Gathering"] = { ["Peacebloom"] = true, ["Odd^Name; x=1|y"] = true } }
+    local line = GP:ExportRoute(route)
+    check(line:sub(1, 4) == "GL1^" and not line:find("|", 1, true) and not line:find("%s"), "one line, nothing that breaks in chat: " .. #line)
+    local got = GP:ParseShared(line)
+    check(got and got.mapID == route.mapID and got.name == route.name, "comes back with its zone and name")
+    check(#got.points == #route.points, "every stop")
+    local same = true
+    for i = 1, #route.points do same = same and near(got.points[i], route.points[i], 1e-9) end
+    check(same, "at exactly the same places")
+    same = #got.drawn == #route.drawn
+    for i = 1, #route.drawn do same = same and near(got.drawn[i], route.drawn[i], 1e-9) end
+    check(same, "and the lines along the ground")
+    check(got.kinds["Herb Gathering"]["Odd^Name; x=1|y"] and got.kinds["Herb Gathering"]["Peacebloom"], "node names, odd ones too")
+    check(near(got.color[1], route.color[1], 0.001) and got.sight == route.sight and got.walked and near(got.walkFactor, 1.25, 0.001),
+        "its colour, pass distance and walking")
+    -- broken lines are turned down
+    check(GP:ParseShared("hello") == nil, "not a route")
+    check(GP:ParseShared(line:sub(1, #line - 9)) == nil, "cut short")
+    local changed = line:sub(1, 40) .. (line:sub(41, 41) == "A" and "B" or "A") .. line:sub(42)
+    check(GP:ParseShared(changed) == nil, "changed")
+    check(select(2, GP:ParseShared("GL2^abcdef^x")):find("newer"), "from a newer Gatherline")
+    check(GP:ParseShared("  " .. line:sub(1, 30) .. "\n" .. line:sub(31) .. " ") ~= nil, "spaces and line breaks from pasting don't matter")
+    -- importing: a name that's taken gets a number
+    local added = GP:ImportShared(line)
+    check(added and #GP.db.routes == before + 1 and added.name == route.name .. " (2)", "added as " .. tostring(added and added.name))
+    check(added.id ~= route.id and added.shown and not added.working and added.points ~= route.points, "its own route")
+    check(logHas("added |cffffd100"), "and said so")
+    local again = GP:ImportShared(line)
+    check(again.name == route.name .. " (3)", "and again")
+    GP:DeleteRoute(again)
+    -- in the window: Share on the card, Import on the page
+    GP:OpenConfig("routes")
+    ui.routesZone.Choose(route.mapID)
+    GP:RefreshConfig()
+    local k
+    for i, row in ipairs(GP.ui.routeRows) do if row.route == route then k = i end end
+    Click(GP.ui.shareButtons[k])
+    local f = GP.shareWindow
+    check(f and f:IsShown() and f.box:GetText() == line and f.mode == "share", "Share shows the line")
+    Click(f.close)
+    Click(GP.ui.routesImport)
+    check(f:IsShown() and f.mode == "import" and f.box:GetText() == "", "Import shows an empty box")
+    f.box:SetText("nonsense")
+    Click(f.go)
+    check(f:IsShown() and logHas("isn't a Gatherline route"), "nonsense: says so, the box stays")
+    f.box:SetText(line)
+    Click(f.go)
+    check(not f:IsShown() and #GP.db.routes == before + 2, "a good line: added")
+    GP:DeleteRoute(GP.db.routes[#GP.db.routes])
+    -- the best route: the most an hour, once two are ridden long enough
+    route.stats = { laps = 3, lapTime = 900, best = 290, rideTime = 900, gathered = 60, value = 30000 }
+    added.stats = { laps = 2, lapTime = 600, best = 280, rideTime = 600, gathered = 50, value = 10000 }
+    local ranked = GP:RankedRoutes()
+    check(ranked[1].route == route and ranked[2].route == added, "gold an hour decides")
+    check(GP:BestRouteOn(route.mapID) == route, "the best in its zone")
+    GP:RefreshConfig()
+    check(GP.ui.routeRows[k].info:GetText():find("best here"), "marked on its card")
+    route.stats.value, added.stats.value = 0, 0
+    check(GP:RankedRoutes()[1].route == added, "without prices: nodes an hour")
+    added.stats.rideTime = 100
+    check(GP:BestRouteOn(route.mapID) == nil, "a route ridden only a moment isn't compared")
+    SlashCmdList.GATHERLINE("stats all")
+    check(logHas("best first"), "/gl stats all")
+    route.stats, route.drawn, route.walked, route.walkFactor = nil, nil, nil, nil
+    GP:DeleteRoute(added)
+    check(#GP.db.routes == before, "all tidied up")
+end
+
 STEP("without GatherMate2")
 GatherMate2 = nil
 check(not GP:HasGatherMate())

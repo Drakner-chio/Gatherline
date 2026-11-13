@@ -1,5 +1,16 @@
 # Gatherline
 
+## v1.3.0
+
+- **Share routes:** the new *Share* button on a route's card gives you one line of text
+  with the route in it. Send it to a friend; they click *Import* (next to *New route*) and
+  paste it, and get exactly your loop – the same stops, the lines along the ground, its
+  colour and pass distance. A route whose name is taken in that zone gets a number.
+  `/gl share` and `/gl import` do the same.
+- **Your best route:** once two routes in a zone are ridden for at least 10 minutes each,
+  the one that brings the most an hour (gold with Auctionator, else nodes) is marked
+  *best here* on its card. `/gl stats all` lists all your routes, best first.
+
 ## v1.2.0
 
 - **Smart laps:** Gatherline notes where you gather (Herb Gathering, Mining). A stop whose

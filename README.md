@@ -10,6 +10,8 @@ Gathering routes for **World of Warcraft: Forever**: the shortest loop through y
 - **Passes within:** with Find Herbs or Find Minerals on, the route only has to come close enough to see each node, so it cuts corners and nodes close together become one stop
 - **Start:** ride a route with Shortest Path Forever's arrow and tracker. From another zone or continent it takes you there first (flights, boats, portals), then round the loop – lap after lap or a set number of laps, with lap times in chat
 - **Guidance settings:** how close you need to get before the next stop, how many stops are shown ahead, and whether stops are called by number (*Stop 3/42*), by what's there (*Copper Vein ×2*) or both
+- **Smart laps:** stops whose nodes you just gathered are skipped until they can be back
+- **Statistics per route:** best and average lap, nodes an hour and, with Auctionator, gold an hour
 - **Turn a route round** with one click
 - **No-go areas:** draw parts of a zone your routes stay out of
 - **New nodes join by themselves** where they add the least walking
@@ -22,6 +24,7 @@ Gathering routes for **World of Warcraft: Forever**: the shortest loop through y
 |---|---|---|
 | **GatherMate2** or **GatherLite** | The nodes routes are made from (either, or both) | one of them |
 | **Shortest Path Forever** (with **ForeverCore**) | Walking maps for routes over the ground, and the guidance for Start | recommended – without it routes use straight lines and there's no Start |
+| **Auctionator** | What your loot is worth, for gold an hour in the statistics | optional |
 
 The **About** page in the window shows whether everything is there.
 
@@ -38,6 +41,8 @@ The **About** page in the window shows whether everything is there.
 | `/gl names number\|nodes\|both` | What stops are called |
 | `/gl show`, `/gl hide` | Show or hide all lines |
 | `/gl skipped` | Nodes on your skip list |
+| `/gl empty N` | Minutes a gathered stop is skipped (0 = never) |
+| `/gl stats`, `/gl stats reset` | Statistics of the route you ride / start over |
 | `/gl walk` | Test the walking search |
 
 ## Credits and licence

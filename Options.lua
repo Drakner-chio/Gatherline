@@ -94,7 +94,7 @@ end
 ---------------------------------------------------------------------------
 -- Routes tab
 ---------------------------------------------------------------------------
-local ROW_H = 92
+local ROW_H = 104
 local INFO_W = PAGE_W - 16 - 100 - 16 - 10   -- from the left to Show
 local routesZone   -- the map whose routes are listed
 
@@ -258,7 +258,10 @@ local function BuildRoutes(p)
                 local parts = { (lap:gsub("^%l", string.upper)) }
                 if (route.sight or 0) > 0 then parts[#parts + 1] = L["passes within %d yards"]:format(route.sight) end
                 if route.walked then parts[#parts + 1] = "|cff" .. T.ACCENT_HEX .. L["over the ground"] .. "|r" end
-                r.info:SetText(line1 .. "\n" .. table.concat(parts, dot))
+                local text = line1 .. "\n" .. table.concat(parts, dot)
+                local stats = GP:StatsLine(route)
+                if stats then text = text .. "\n|cffb8bcc4" .. stats .. "|r" end
+                r.info:SetText(text)
             end
             r.rebuild:SetDisabled(GP:Busy())
             local riding = GP:IsNavigating(route)
@@ -266,7 +269,8 @@ local function BuildRoutes(p)
             r.ride:SetDisabled(not riding and (route.working or GP:NodeCount(route) < 2 or not GP:CanNavigate()))
             r.turn:SetDisabled(route.working or GP:NodeCount(route) < 2)
             if riding and not route.working then
-                r.info:SetText(r.info:GetText():gsub("\n.*$", "") .. "\n|cff" .. T.ACCENT_HEX .. GP:NavStatus() .. "|r")
+                local first, rest = r.info:GetText():match("^([^\n]*)\n[^\n]*(.*)$")
+                r.info:SetText((first or r.info:GetText()) .. "\n|cff" .. T.ACCENT_HEX .. GP:NavStatus() .. "|r" .. (rest or ""))
             end
             r.edit:SetDisabled(route.working)
         end
@@ -882,6 +886,15 @@ local function BuildRiding(p)
     refs.joinSwitch = Setting(card4, "Line to the route", 12, -60, "joinLine",
         "A dashed line on the minimap from you to the nearest point of a route showing in your zone, so you know where to join it. Gone once you're on the route.")
 
+    local card5 = Card(p, "Smart laps", 0, -316, PAGE_W, 90)
+    refs.navRespawn = T.Slider(card5, "Skip gathered stops for", 12, -30, 244,
+        function() return GP.db.navRespawn end,
+        function(v) GP.db.navRespawn = v end,
+        GP.RANGES.navRespawn[1], GP.RANGES.navRespawn[2], " min", 1, nil, "Never")
+    T.Tooltip(refs.navRespawn, "Skip gathered stops for",
+        "When you gather a node, Gatherline notes where. A stop whose nodes you all gathered within this many minutes is left out of the next laps, until they can be back. Nodes someone else took aren't known, so those stops stay in.")
+    AddRefresher(refs.navRespawn.Refresh)
+    T.Note(card5, "Each lap counts towards the route's statistics: best and average lap, nodes an hour, and with Auctionator what it's worth an hour. /gl stats shows them.", COL2, -30, PAGE_W - COL2 - 12)
 end
 
 ---------------------------------------------------------------------------

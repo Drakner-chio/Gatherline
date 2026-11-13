@@ -13,6 +13,10 @@
 -- them, they're sent again from there with the next ones behind. Riding past
 -- a stop (close to a later one) skips the ones before it, so you aren't sent
 -- back for a stop you cut.
+--
+-- Smart laps: a stop whose nodes you all gathered in the last db.navRespawn
+-- minutes (Session.lua notes where you gather) is left out of what Shortest
+-- Path gets, so a lap doesn't take you past nodes that can't be back yet.
 
 local ADDON, ns = ...
 local L = ns.L
@@ -75,7 +79,7 @@ function GP:StopLabels(route)
     local mapID, pts, n = route.mapID, route.points, self:NodeCount(route)
     local w, h = Yards(mapID)
     local reach = (route.sight or 0) + 40
-    local counts = {}
+    local counts, members = {}, {}
     for kind, names in pairs(route.kinds or {}) do
         self:EachNode(mapID, kind, function(x, y, name)
             if not names[name] or self:IsSkipped(name) or self:InTaboo(mapID, x, y) then return end
@@ -88,6 +92,10 @@ function GP:StopLabels(route)
             if bi then
                 counts[bi] = counts[bi] or {}
                 counts[bi][name] = (counts[bi][name] or 0) + 1
+                members[bi] = members[bi] or {}
+                local m = members[bi]
+                m[#m + 1] = x
+                m[#m + 1] = y
             end
         end)
     end
@@ -103,7 +111,7 @@ function GP:StopLabels(route)
         if #list > GP.NAV_LABEL_NAMES then parts[#parts + 1] = "+" .. (#list - GP.NAV_LABEL_NAMES) end
         labels[i] = table.concat(parts, ", ")
     end
-    return labels
+    return labels, members
 end
 
 -- A stop's title as the rider picked (db.navLabel)
@@ -133,17 +141,46 @@ local function StopAt(p)
     }
 end
 
--- Hand Shortest Path the positions from p on. False if it turned them down
--- (in combat, Journeys switched off, no position yet); it's tried again.
+-- Whether the stop at position p is empty: it has nodes, and you gathered
+-- every one of them within the last db.navRespawn minutes
+local function Empty(p)
+    local minutes = GP.db.navRespawn or 0
+    if minutes <= 0 or p >= nav.last then return false end
+    local m = nav.members and nav.members[Index(p)]
+    if not m or #m == 0 then return false end
+    local now, seconds, mapID = GetTime(), minutes * 60, nav.route.mapID
+    for k = 1, #m, 2 do
+        if not GP:WasHarvested(mapID, m[k], m[k + 1], seconds, now) then return false end
+    end
+    return true
+end
+GP.NavStopEmpty = function(p) return nav ~= nil and Empty(p) end
+
+-- Hand Shortest Path the positions from p on, leaving out empty stops (each
+-- noted in nav.skipped). False if it turned them down (in combat, Journeys
+-- switched off, no position yet); it's tried again.
 local function Send(p)
     local api = API()
     if not api then return false end
-    local stops = {}
-    local ahead = GP.NAV_AHEAD or GP.db.navAhead or 10
-    for q = p, min(p + max(2, ahead) - 1, nav.last) do stops[#stops + 1] = StopAt(q) end
+    local ahead = max(2, GP.NAV_AHEAD or GP.db.navAhead or 10)
+    local stops, chunk, skipped = {}, {}, {}
+    local q, stop = p, min(nav.last, p + nav.n + ahead)
+    while #chunk < ahead and q <= stop do
+        if Empty(q) then
+            skipped[#skipped + 1] = q
+        else
+            chunk[#chunk + 1] = q
+            stops[#stops + 1] = StopAt(q)
+        end
+        q = q + 1
+    end
+    if #chunk == 0 then   -- everything's empty: go on anyway
+        chunk[1], stops[1], skipped = p, StopAt(p), {}
+    end
     local ok = api.NavigateRoute(OWNER, stops)
     if ok then
-        nav.first, nav.count, nav.pos, nav.pending, nav.refusedAt = p, #stops, p, nil, nil
+        for _, s in ipairs(skipped) do nav.skipped[s] = true end
+        nav.chunk, nav.first, nav.count, nav.pos, nav.pending, nav.refusedAt = chunk, chunk[1], #stops, chunk[1], nil, nil
         return true
     end
     nav.pending = p
@@ -154,6 +191,8 @@ end
 local ticker, unsubscribe
 
 local function Halt()
+    -- the lap you stopped in counts for the riding time (an hour's nodes and gold)
+    if nav and nav.lapBegan then GP:AddRideTime(nav.route, GetTime() - nav.lapBegan) end
     if ticker then ticker:Cancel(); ticker = nil end
     if unsubscribe then pcall(unsubscribe); unsubscribe = nil end
     nav = nil
@@ -191,17 +230,33 @@ local function CatchUp(p)
     return found
 end
 
--- p is the position you're heading for: the ones before it are done
+-- p is the position you're heading for: the ones before it are done. A lap
+-- is timed from reaching its first stop to reaching the next lap's first one.
 local function NoteLap(p)
+    if not nav.lapBegan and p >= 2 then nav.lapBegan = GetTime() end
     local lap = Lap(max(1, p - 1))
     if lap > (nav.lap or 1) then
         local now = GetTime()
-        Print(L["lap %d of %s done in %s."]:format(lap - 1, nav.route.name, FormatTime(now - (nav.lapBegan or now))))
+        local done = nav.lap or 1
+        local skipped = 0
+        for q = (done - 1) * nav.n + 1, done * nav.n do
+            if nav.skipped[q] then skipped = skipped + 1 end
+        end
+        local took = now - (nav.lapBegan or now)
+        GP:RecordLap(nav.route, took)
+        GP:AddRideTime(nav.route, took)
+        local line = L["lap %d of %s done in %s."]:format(done, nav.route.name, FormatTime(took))
+        if skipped > 0 then
+            line = line .. " " .. (skipped == 1 and L["1 stop skipped (still empty)."]
+                or L["%d stops skipped (still empty)."]:format(skipped))
+        end
+        Print(line)
         nav.lap, nav.lapBegan = lap, now
     end
 end
 
 local function Finish()
+    NoteLap(nav.last + 1)
     local route, laps = nav.route, nav.laps
     local took = GetTime() - (nav.began or GetTime())
     Halt()
@@ -235,7 +290,7 @@ local function Tick()
 
     local i, why = api.CurrentStop(OWNER)
     if i then
-        local p = nav.first + i - 1
+        local p = nav.chunk[i] or nav.chunk[#nav.chunk]
         if p ~= nav.pos and GP.RefreshConfig then nav.pos = p; GP:RefreshConfig() end
         nav.pos = p
         NoteLap(p)
@@ -252,7 +307,7 @@ local function Tick()
     if why == "loading" then return end
     local ended = api.Ended(OWNER)
     if ended == "arrived" then
-        local done = nav.first + nav.count - 1
+        local done = nav.chunk[nav.count]
         if done >= nav.last then Finish() else NoteLap(done + 1); Send(done + 1) end
     elseif ended == "cleared" or ended == "replaced" or ended == "cancelled" then
         local name = route.name
@@ -314,10 +369,11 @@ function GP:StartNav(route, laps)
         route = route, points = route.points, n = n, start = start,
         dir = self.db.arrowsReverse and -1 or 1,
         laps = laps, last = laps > 0 and laps * n + 1 or huge,
-        began = now, lapBegan = now, lap = 1,
+        began = now, lap = 1, skipped = {},
     }
-    local ok, labels = pcall(self.StopLabels, self, route)
+    local ok, labels, members = pcall(self.StopLabels, self, route)
     nav.labels = ok and labels or nil
+    nav.members = ok and members or nil
     if not Send(1) and not InCombat() then
         nav = nil
         Print(L["Shortest Path Forever won't take the route. Is its Journeys guidance switched on?"])

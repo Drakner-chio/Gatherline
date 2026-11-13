@@ -29,6 +29,8 @@ Click **Start** on a route and Shortest Path Forever's arrow and tracker take ov
 - From **anywhere** – another zone, another continent – it leads you to the route first, with flights, boats and portals, then round the loop from the nearest stop.
 - **Lap after lap**, or a set number of laps, with each lap's time in chat.
 - Ride past a stop toward a later one and it simply carries on from there.
+- **Smart laps:** stops whose nodes you gathered a few minutes ago are skipped until they can be back – no more riding past empty spots.
+- **Statistics per route:** best and average lap, nodes an hour and – with Auctionator – gold an hour, right on the route's card.
 
 ![Your pace, your stops](https://raw.githubusercontent.com/Drakner-chio/Gatherline/main/docs/images/gatherline-4.jpg)
 
@@ -58,6 +60,7 @@ The **Guidance** page decides how the ride feels:
 |---|---|---|
 | **GatherMate2** or **GatherLite** | The nodes routes are made from – either one, or both (a node both know counts once) | one of them required |
 | **Shortest Path Forever** (with **ForeverCore**) | Walking maps for routes over the ground, and the arrow and tracker for Start | recommended – without it routes use straight lines and there's no Start |
+| **Auctionator** | What your loot is worth, for gold an hour in the statistics | optional |
 
 The **About** page in the window shows whether everything is there.
 
@@ -74,6 +77,8 @@ The **About** page in the window shows whether everything is there.
 | `/gl names number\|nodes\|both` | What stops are called |
 | `/gl show`, `/gl hide` | Show or hide all lines |
 | `/gl skipped` | Nodes on your skip list |
+| `/gl empty N` | Minutes a gathered stop is skipped (0 = never) |
+| `/gl stats` | Statistics of the route you ride |
 
 ## Good to know
 

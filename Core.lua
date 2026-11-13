@@ -49,6 +49,7 @@ GP.DEFAULTS = {
     navLaps = 0,           -- laps Start rides a route (0 = until you stop it)
     navReach = 30,         -- yards from a stop at which a ride moves on to the next
     navAhead = 10,         -- stops handed to Shortest Path at once (its numbered pins)
+    navRespawn = 5,        -- minutes a gathered node counts as gone: stops with only such nodes are skipped (0 = never)
     navLabel = "both",     -- what a stop is called: "number" (Wegpunkt 3/42), "nodes" (what's there), "both"
     walkRoutes = true,     -- work routes out with walks over the ground (Shortest Path's walking maps)
 }
@@ -72,6 +73,7 @@ GP.RANGES = {
     navLaps = { 0, 99 },
     navReach = { 15, 150 },
     navAhead = { 2, 25 },
+    navRespawn = { 0, 30 },
 }
 
 -- New routes take these in turn
@@ -2125,6 +2127,8 @@ local function Help()
     print("  |cffffd100/gl reach N|r  " .. L["how close (yards) to a stop before the ride moves on"])
     print("  |cffffd100/gl names number|nodes|both|r  " .. L["what the stops are called while riding"])
     print("  |cffffd100/gl reverse|r  " .. L["turn the route you ride (or the one shown in your zone) round"])
+    print("  |cffffd100/gl empty N|r  " .. L["minutes a gathered stop is skipped (0 = never)"])
+    print("  |cffffd100/gl stats|r, |cffffd100/gl stats reset|r  " .. L["the statistics of the route you ride (or the one shown in your zone)"])
     print("  |cffffd100/gl walk|r  " .. L["test: yards on foot from you to the next stops"])
 end
 
@@ -2168,6 +2172,29 @@ SlashCmdList.GATHERLINE = function(msg)
         if n then GP.db.navReach = math.max(r[1], math.min(r[2], math.floor(n))) end
         Print(L["a ride moves on to the next stop %d yards before it. |cffffd100/gl reach N|r to change it (%d-%d)."]:format(
             GP.db.navReach, r[1], r[2]))
+    elseif cmd == "empty" or cmd == "respawn" then
+        local n = tonumber((msg or ""):match("^%s*%S+%s+(%d+)"))
+        local r = GP.RANGES.navRespawn
+        if n then GP.db.navRespawn = math.max(r[1], math.min(r[2], math.floor(n))); GP:Changed() end
+        local m = GP.db.navRespawn
+        Print(m == 0 and L["a ride never skips stops you gathered. |cffffd100/gl empty N|r to change it."]
+            or L["a ride skips stops whose nodes you all gathered in the last %d minutes. |cffffd100/gl empty N|r to change it."]:format(m))
+    elseif cmd == "stats" then
+        local route = GP:NavRoute() or GP:NavCandidate()
+        if not route then
+            Print(L["no route shown in your zone."])
+        elseif (msg or ""):lower():match("^%s*%S+%s+reset") then
+            GP:ResetStats(route)
+            Print(L["statistics of %s reset."]:format(route.name))
+        else
+            local line = GP:StatsLine(route)
+            local s = route.stats
+            if line then
+                Print(L["%s: laps %d, nodes gathered %d. %s"]:format(route.name, s.laps, s.gathered, line))
+            else
+                Print(L["%s has no laps yet. Ride it with Start; each lap counts."]:format(route.name))
+            end
+        end
     elseif cmd == "walk" then
         GP:WalkTest()
     elseif cmd == "show" or cmd == "hide" then

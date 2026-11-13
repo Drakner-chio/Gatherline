@@ -788,7 +788,7 @@ for _, k in ipairs(GP.DISPLAY_KEYS) do
 end
 local listed = {}
 for _, k in ipairs(GP.DISPLAY_KEYS) do listed[k] = true end
-local notOnTab = { minimapAngle = true, sight = true, nextColor = true, tabooShow = true, navLaps = true, walkRoutes = true, navReach = true, navAhead = true, navLabel = true }
+local notOnTab = { minimapAngle = true, sight = true, nextColor = true, tabooShow = true, navLaps = true, walkRoutes = true, navReach = true, navAhead = true, navLabel = true, navRespawn = true }
 for k in pairs(GP.DEFAULTS) do
     check(listed[k] or notOnTab[k], k .. ": every setting on the tab is restored")
 end
@@ -1382,6 +1382,93 @@ do
     GP:StartNav(route)
     check(Same(fake.stops[2].x, fake.stops[2].y, StopXY(2)), "arrows reversed: the other way round")
     GP.db.arrowsReverse = false
+
+    -- smart laps: a stop whose nodes you all gathered lately is left out
+    GP:StopNav(true)
+    GP:ResetStats(route)
+    GP.harvests = {}
+    GP.NAV_AHEAD = n + 2
+    local _, members = GP:StopLabels(route)
+    local j
+    for i = 3, n do if members[i] and #members[i] > 0 then j = i break end end
+    check(j ~= nil, "a stop with nodes to gather")
+    -- gathering is seen from the spell cast, where you stand
+    check(GP:IsGatherSpell(2366) and not GP:IsGatherSpell(133), "Herb Gathering is gathering, Fireball isn't")
+    local onEvent = GP.sessionFrame:GetScript("OnEvent")
+    for k = 1, #members[j], 2 do
+        PLAYER.x, PLAYER.y = members[j][k], members[j][k + 1]
+        onEvent(GP.sessionFrame, "UNIT_SPELLCAST_SUCCEEDED", "player", "cast", 2366)
+    end
+    check(#GP.harvests == #members[j] / 2, "every node gathered noted")
+    onEvent(GP.sessionFrame, "UNIT_SPELLCAST_SUCCEEDED", "target", "cast", 2366)
+    check(#GP.harvests == #members[j] / 2, "someone else's cast isn't")
+    check(GP:WasHarvested(route.mapID, members[j][1], members[j][2], 300), "a gathered node counts as gone")
+    PLAYER.x, PLAYER.y = StopXY(1)
+    GP.db.arrowsReverse = false
+    GP.db.navRespawn = 5
+    check(GP:StartNav(route, 1), "started a lap")
+    check(#fake.stops == n, "one stop fewer handed over")
+    local jx, jy = StopXY(j)
+    local found = false
+    for _, st in ipairs(fake.stops) do if Same(st.x, st.y, jx, jy) then found = true end end
+    check(not found, "the gathered stop isn't one of them")
+    -- ride it, a minute a stop; loot from a node counts what it's worth with Auctionator
+    LOOT_ITEM_SELF = "You receive loot: %s."
+    LOOT_ITEM_SELF_MULTIPLE = "You receive loot: %sx%d."
+    Auctionator = { API = { v1 = { GetAuctionPriceByItemLink = function(_, link)
+        return link:find("Peacebloom") and 2500 or nil end } } }
+    local link = "|cffffffff|Hitem:2447::::::::|h[Peacebloom]|h|r"
+    local link2, count = GP:ParseLoot("You receive loot: " .. link .. "x3.")
+    check(link2 == link and count == 3, "loot read from the chat line")
+    PLAYER.x, PLAYER.y = -5, -5
+    local guard = 0
+    while GP:IsNavigating() and guard < 200 do
+        FAKE_TIME = FAKE_TIME + 60
+        if guard == 2 then
+            GP:RecordHarvest(route.mapID, 0.01, 0.01)
+            onEvent(GP.sessionFrame, "CHAT_MSG_LOOT", "You receive loot: " .. link .. "x3.")
+        end
+        Arrive(); guard = guard + 1
+    end
+    check(logHas("1 stop skipped (still empty)"), "the lap says it skipped one")
+    local st = route.stats
+    check(st and st.laps == 1 and st.best and st.best > 0 and st.best == st.lapTime, "a lap counted for the route")
+    check(st.gathered == 1 and st.value == 7500, "what was gathered and what it's worth")
+    check(st.rideTime > 0, "and how long it was ridden")
+    local line = GP:StatsLine(route)
+    check(line and line:find("best lap") and line:find("nodes/h") and line:find("/h"), "a line of statistics: " .. tostring(line))
+    GP:OpenConfig("routes")
+    check(GP.ui.rideButtons[1] and true, "the route list still draws")
+    SlashCmdList.GATHERLINE("stats")
+    check(logHas("laps 1"), "/gl stats")
+    -- 0 minutes: nothing's skipped
+    GP.db.navRespawn = 0
+    PLAYER.x, PLAYER.y = StopXY(1)
+    GP:StartNav(route, 1)
+    check(#fake.stops == n + 1, "skipping off: every stop")
+    GP:StopNav(true)
+    -- every stop gathered: it goes on anyway
+    GP.db.navRespawn = 5
+    for i = 1, n do
+        for k = 1, #(members[i] or {}), 2 do GP:RecordHarvest(route.mapID, members[i][k], members[i][k + 1]) end
+    end
+    GP:StartNav(route, 1)
+    check(#fake.stops >= 1, "all empty: still somewhere to go")
+    GP:StopNav(true)
+    -- long enough later they're back
+    FAKE_TIME = FAKE_TIME + 600
+    GP:StartNav(route, 1)
+    check(#fake.stops == n + 1, "after the minutes: every stop again")
+    GP:StopNav(true)
+    SlashCmdList.GATHERLINE("stats reset")
+    check(route.stats == nil and GP:StatsLine(route) == nil, "/gl stats reset")
+    SlashCmdList.GATHERLINE("empty 99")
+    check(GP.db.navRespawn == 30, "/gl empty is kept between 0 and 30")
+    GP.db.navRespawn = GP.DEFAULTS.navRespawn
+    GP:OpenConfig("riding")
+    check(GP.ui.navRespawn ~= nil, "Smart laps on the Guidance tab")
+    Auctionator = nil
+    GP.harvests = {}
 
     -- deleting the route stops the ride
     GP:DeleteRoute(route)

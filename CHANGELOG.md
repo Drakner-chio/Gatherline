@@ -1,5 +1,18 @@
 # Gatherline
 
+## v1.2.0
+
+- **Smart laps:** Gatherline notes where you gather (Herb Gathering, Mining). A stop whose
+  nodes you all gathered within the last few minutes is left out of the next laps, so you
+  don't ride past nodes that can't be back yet. *Guidance → Smart laps* sets how long
+  (default 5 minutes, 0 = never); `/gl empty N` does too. The lap line in chat says how many
+  stops were skipped. If every stop is empty, the ride goes on as usual.
+- **Statistics per route:** each lap you ride counts – best and average lap, nodes gathered
+  an hour and, with **Auctionator**, what the loot is worth an hour. They show on the route's
+  card and with `/gl stats`; `/gl stats reset` starts over.
+- A lap is now timed from its first stop to the next lap's first stop, so the way to the
+  route no longer counts towards the first lap.
+
 ## v1.1.0
 
 - **GatherLite support:** Gatherline now makes routes from GatherLite's nodes too –

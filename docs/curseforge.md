@@ -2,7 +2,7 @@
 
 ## Gathering routes over the real ground
 
-**Gatherline** turns your GatherMate2 herb and ore nodes into the shortest gathering loop – measured on foot over the real terrain, drawn on your world map and minimap, and ridden with an arrow that leads you round it.
+**Gatherline** turns the herb and ore nodes from **GatherMate2** or **GatherLite** into the shortest gathering loop – measured on foot over the real terrain, drawn on your world map and minimap, and ridden with an arrow that leads you round it.
 
 - **Over the ground, not through it:** routes are measured on the game's own walking maps (from Shortest Path Forever) – round mountains, cliffs and lakes instead of straight over them
 - **Never worse than a straight line:** five candidate loops are walked leg by leg and polished, and the shortest on foot wins
@@ -48,6 +48,7 @@ The **Guidance** page decides how the ride feels:
 - **No-go areas:** draw parts of a zone on the world map that your routes keep out of
 - **New nodes join by themselves** wherever they add the least walking
 - **Skip list:** right-click poor or wilted nodes to leave them out everywhere
+- **Works with GatherMate2 and GatherLite**, including GatherLite's built-in WoW Forever node database
 - **Coming from GatherPath Forever?** Your routes come over by themselves
 - **English and German**, following your game client
 
@@ -55,7 +56,7 @@ The **Guidance** page decides how the ride feels:
 
 | Addon | What for | |
 |---|---|---|
-| **GatherMate2** | The nodes routes are made from | required |
+| **GatherMate2** or **GatherLite** | The nodes routes are made from – either one, or both (a node both know counts once) | one of them required |
 | **Shortest Path Forever** (with **ForeverCore**) | Walking maps for routes over the ground, and the arrow and tracker for Start | recommended – without it routes use straight lines and there's no Start |
 
 The **About** page in the window shows whether everything is there.

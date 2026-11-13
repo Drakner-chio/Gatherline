@@ -1,4 +1,4 @@
--- Gatherline: routes through your GatherMate2 nodes, drawn on the
+-- Gatherline: routes through your GatherMate2 / GatherLite nodes, drawn on the
 -- world map and the minimap.
 --
 -- A route belongs to one map (zone). It's made from the kinds of node you pick
@@ -41,7 +41,7 @@ GP.DEFAULTS = {
     arrowsReverse = false, -- and they point the other way
     joinLine = true,       -- a dashed line on the minimap from you to the nearest point of a route
     tabooShow = true,      -- taboo areas drawn (red, hatched) on the world map
-    autoAdd = true,        -- nodes GatherMate2 finds later join the routes they belong to
+    autoAdd = true,        -- nodes GatherMate2 / GatherLite find later join the routes they belong to
     minimapButton = true,
     minimapAngle = 200,
     sight = 185,           -- where New route's "route passes within" starts (yards, 0 = go to every node)
@@ -309,35 +309,14 @@ function GP:HasGatherMate()
     return type(gm) == "table" and type(gm.GetNodesForZone) == "function" and type(gm.DecodeLoc) == "function"
 end
 
--- GatherMate2's kinds, in our order, then any we don't know
-function GP:Kinds()
-    local list, seen = {}, {}
-    local known = (_G.GatherMate2 and _G.GatherMate2.db_types) or {}
-    local have = {}
-    for _, k in ipairs(known) do have[k] = true end
-    for _, k in ipairs(self.KINDS) do
-        if have[k] or #known == 0 then list[#list + 1] = k; seen[k] = true end
-    end
-    for _, k in ipairs(known) do
-        if not seen[k] then list[#list + 1] = k; seen[k] = true end
-    end
-    return list
-end
+-- Our kinds of node, from every node source (Sources.lua)
+function GP:Kinds() return self.Sources.Kinds() end
 
 function GP:KindName(kind) return L[self.KIND_NAMES[kind] or kind] end
 
--- Calls fn(x, y, nodeName) for every GatherMate2 node of that kind on that map
-function GP:EachNode(mapID, kind, fn)
-    local gm = _G.GatherMate2
-    if not self:HasGatherMate() then return end
-    pcall(function()
-        for coord, nodeID in gm:GetNodesForZone(mapID, kind, true) do
-            local x, y = gm:DecodeLoc(coord)
-            local name = gm.GetNameForNode and gm:GetNameForNode(kind, nodeID) or nil
-            fn(x, y, name or ("Node " .. tostring(nodeID)))
-        end
-    end)
-end
+-- Calls fn(x, y, nodeName) for every node of that kind on that map, from
+-- GatherMate2 and/or GatherLite
+function GP:EachNode(mapID, kind, fn) return self.Sources.EachNode(mapID, kind, fn) end
 
 -- The skip list: node names (Poor Copper Ore, Wilted Peacebloom...) that no
 -- route uses, in any zone. Routes that had one drop it when they're rebuilt.
@@ -357,7 +336,7 @@ function GP:SkippedNames()
     return list
 end
 
--- What GatherMate2 knows on a map: { { kind =, name =, count =, skip = }, ... }, by kind then name
+-- What the node sources know on a map: { { kind =, name =, count =, skip = }, ... }, by kind then name
 function GP:ZoneNodes(mapID)
     local list = {}
     for _, kind in ipairs(self:Kinds()) do
@@ -373,32 +352,10 @@ function GP:ZoneNodes(mapID)
     return list
 end
 
--- The maps GatherMate2 has nodes for, sorted by name
+-- The maps there are nodes for (in any source), sorted by name
 function GP:GatherZones()
-    local gm = _G.GatherMate2
     local found = {}
-    if self:HasGatherMate() and type(gm.gmdbs) == "table" then
-        for _, kind in ipairs(self:Kinds()) do
-            local db = gm.gmdbs[kind]
-            if type(db) == "table" then
-                -- GatherMate2 keeps nodes in its saved variables, by map number
-                local stores = {}
-                if type(rawget(db, "__gm2_base_storage")) == "table" then
-                    stores[#stores + 1] = rawget(db, "__gm2_base_storage")
-                    for _, s in pairs(rawget(db, "__gm2_storage_map") or {}) do stores[#stores + 1] = s end
-                else
-                    stores[1] = db
-                end
-                for _, store in ipairs(stores) do
-                    for mapID, nodes in pairs(store) do
-                        if type(mapID) == "number" and type(nodes) == "table" and next(nodes) then
-                            found[mapID] = true
-                        end
-                    end
-                end
-            end
-        end
-    end
+    self.Sources.Zones(found)
     local here = self:PlayerMap()
     if here then found[here] = true end
     local list = {}
@@ -1085,8 +1042,8 @@ end
 
 -- opts: mapID, kinds = { [kind] = { [name] = true } }, name, sight
 function GP:NewRoute(opts)
-    if not self:HasGatherMate() then
-        Print(L["needs GatherMate2, where the nodes come from."])
+    if not self:HasNodeSource() then
+        Print(L["needs GatherMate2 or GatherLite, where the nodes come from."])
         return nil
     end
     if not self:AnyPicked(opts.kinds) then
@@ -1121,8 +1078,8 @@ function GP:NewRoute(opts)
         route.working = nil
         if self:NodeCount(route) < 2 then
             self:DeleteRoute(route)
-            Print((read == 1 and L["GatherMate2 has only one node of those kinds in %s, so there's no route to make."]
-                or L["GatherMate2 has no node of those kinds in %s, so there's no route to make."]):format(self:MapName(route.mapID)))
+            Print((read == 1 and L["there's only one node of those kinds in %s, so there's no route to make."]
+                or L["there's no node of those kinds in %s, so there's no route to make."]):format(self:MapName(route.mapID)))
             return
         end
         Print(L["made |cffffd100%s|r in %s: %d nodes, %s round.%s"]:format(route.name, self:MapName(route.mapID),
@@ -1138,8 +1095,8 @@ function GP:RebuildRoute(route)
         Print(L["still working out the last route. Try again in a moment."])
         return false
     end
-    if not self:HasGatherMate() then
-        Print(L["needs GatherMate2, where the nodes come from."])
+    if not self:HasNodeSource() then
+        Print(L["needs GatherMate2 or GatherLite, where the nodes come from."])
         return false
     end
     local before, oldPoints, oldNodes = self:RouteNodes(route), route.points, route.nodes
@@ -1150,7 +1107,7 @@ function GP:RebuildRoute(route)
         if self:NodeCount(route) < 2 then
             route.points, route.nodes = oldPoints, oldNodes   -- (GatherMate2's data went missing: keep what was there)
             route.walked, route.walkSkipped, route.walkFactor = oldWalk[1], oldWalk[2], oldWalk[3]
-            Print(L["GatherMate2 has no nodes for %s now, so it was left as it was."]:format(route.name))
+            Print(L["there are no nodes for %s now, so it was left as it was."]:format(route.name))
         else
             local after = self:RouteNodes(route)
             Print(L["%s: %d nodes (%s), %s round.%s"]:format(route.name, after,
@@ -1164,8 +1121,8 @@ end
 -- Changes a route's options (opts as for NewRoute) and finds its loop again.
 -- Turned down like NewRoute; if no loop can be made, the route stays as it was.
 function GP:EditRoute(route, opts)
-    if not self:HasGatherMate() then
-        Print(L["needs GatherMate2, where the nodes come from."])
+    if not self:HasNodeSource() then
+        Print(L["needs GatherMate2 or GatherLite, where the nodes come from."])
         return false
     end
     if not self:AnyPicked(opts.kinds) then
@@ -1193,8 +1150,8 @@ function GP:EditRoute(route, opts)
         route.working = nil
         if self:NodeCount(route) < 2 then
             for k, v in pairs(old) do route[k] = v or nil end
-            Print((read == 1 and L["GatherMate2 has only one node of those kinds in %s, so %s was left as it was."]
-                or L["GatherMate2 has no node of those kinds in %s, so %s was left as it was."]):format(self:MapName(mapID), route.name))
+            Print((read == 1 and L["there's only one node of those kinds in %s, so %s was left as it was."]
+                or L["there's no node of those kinds in %s, so %s was left as it was."]):format(self:MapName(mapID), route.name))
         else
             Print(L["changed |cffffd100%s|r in %s: %d nodes, %s round.%s"]:format(route.name, self:MapName(route.mapID),
                 self:RouteNodes(route), self.FormatYards(route.length), self:TabooNote(route) .. self:WalkNote(route)))
@@ -1354,25 +1311,8 @@ function GP:RemoveNode(mapID, kind, x, y, name)
     return removed
 end
 
-function GP:ListenToGatherMate()
-    if self.listening or not self:HasGatherMate() then return end
-    local gm = _G.GatherMate2
-    if type(gm.RegisterMessage) ~= "function" then return end
-    local function decode(coord)
-        local ok, x, y = pcall(gm.DecodeLoc, gm, coord)
-        if ok then return x, y end
-    end
-    local listener = {}
-    pcall(gm.RegisterMessage, listener, "GatherMate2NodeAdded", function(_, zone, kind, coord, name)
-        local x, y = decode(coord)
-        if x and type(name) == "string" then self:AddNode(zone, kind, x, y, name) end
-    end)
-    pcall(gm.RegisterMessage, listener, "GatherMate2NodeDeleted", function(_, zone, kind, coord, name)
-        local x, y = decode(coord)
-        if x and type(name) == "string" then self:RemoveNode(zone, kind, x, y, name) end
-    end)
-    self.listening = true
-end
+-- New (and deleted) nodes from every source go into (and out of) the routes
+function GP:ListenToGatherMate() self.Sources.Listen() end
 
 ---------------------------------------------------------------------------
 -- Lines
@@ -2250,7 +2190,7 @@ events:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" then
         if arg1 == ADDON then
             GP:LoadSettings()
-        elseif arg1 == "GatherMate2" then
+        elseif arg1 == "GatherMate2" or arg1 == "GatherLite" then
             GP:ListenToGatherMate()
         elseif arg1 == "Blizzard_WorldMap" then
             GP:SetupWorldMap()
@@ -2261,8 +2201,8 @@ events:SetScript("OnEvent", function(_, event, arg1)
         GP:BuildMinimapButton()
         GP:UpdateMinimapButton()
         GP:ListenToGatherMate()
-        if not GP:HasGatherMate() then
-            Print(L["needs |cffffd100GatherMate2|r for its herb and ore nodes. Install it from CurseForge, then /reload."])
+        if not GP:HasNodeSource() then
+            Print(L["needs |cffffd100GatherMate2|r or |cffffd100GatherLite|r for its herb and ore nodes. Install one from CurseForge, then /reload."])
         end
         -- the first time, routes from GatherPath Plus or GatherPath Forever come over by themselves
         if not GP.db.imported and #GP.db.routes == 0 and GP:ImportSource() then GP:ImportRoutes(true) end

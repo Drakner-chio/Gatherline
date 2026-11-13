@@ -1568,10 +1568,95 @@ do
     check(GP.ui.importButton.disabled, "nothing to bring: greyed out")
 end
 
+STEP("nodes from GatherLite")
+do
+    -- a fake GatherLite, as LibStub's AceAddon hands it out: nodes per type and map, objects by id, names translated
+    local glNodes = { herbalism = {}, mining = {}, fishing = {}, containers = {} }
+    local objects = {
+        [1618] = { type = "herb", id = { 1618 }, name = "peacebloom" },
+        [1617] = { type = "herb", id = { 1617 }, name = "silverleaf" },
+        [1731] = { type = "ore", id = { 1731 }, name = "copper_vein" },
+        [2055] = { type = "ore", id = { 2055 }, name = "copper_vein" },
+        [9999] = { type = "ore", id = { 9999 }, name = "poor_copper" },
+    }
+    local translated = { ["node.peacebloom"] = "Peacebloom", ["node.silverleaf"] = "Silverleaf",
+        ["node.copper_vein"] = "Copper Vein", ["node.poor_copper"] = "Poor Copper" }
+    local ignored, handlers = { [9999] = true }, {}
+    local GL = {}
+    function GL:GetNodesForMap(t, mapID)
+        if not mapID then return glNodes[t] end
+        local out = {}
+        for _, n in ipairs(glNodes[t]) do if n.mapID == mapID then out[#out + 1] = n end end
+        return out
+    end
+    function GL:GetNodeObject(id) return objects[id] end
+    function GL:translate(key) return translated[key] or key end
+    function GL:IsIgnored(id) return ignored[id] or false end
+    function GL:On(event, fn) handlers[event] = handlers[event] or {}; table.insert(handlers[event], fn) end
+    local function Add(t, id, mapID, x, y, quiet)
+        local node = { type = t, object = id, mapID = mapID, posX = x, posY = y }
+        table.insert(glNodes[t], node)
+        if not quiet then for _, fn in ipairs(handlers["nodes:added"] or {}) do fn(node) end end
+        return node
+    end
+    local ace = { GetAddon = function(_, name) if name == "GatherLite" then return GL end end }
+    local hadStub = LibStub
+    LibStub = setmetatable({}, { __call = function(_, lib) if lib == "AceAddon-3.0" then return ace end end })
+
+    -- GatherLite alone
+    local gmWas = GatherMate2
+    GatherMate2 = nil
+    check(not GP:HasGatherMate() and GP:HasNodeSource() and GP:SourceNames() == "GatherLite", "GatherLite on its own is enough")
+    local MAP = 1438   -- Teldrassil
+    for i = 0, 5 do Add("herbalism", 1618, MAP, 0.30 + i * 0.05, 0.40 + (i % 2) * 0.05, true) end
+    Add("herbalism", 1617, MAP, 0.60, 0.60, true)
+    Add("mining", 2055, MAP, 0.50, 0.30, true)
+    Add("mining", 9999, MAP, 0.55, 0.35, true)
+    local zone = {}
+    for _, n in ipairs(GP:ZoneNodes(MAP)) do zone[n.kind .. "/" .. n.name] = n.count end
+    check(zone["Herb Gathering/Peacebloom"] == 6 and zone["Herb Gathering/Silverleaf"] == 1, "its herbs, by their names")
+    check(zone["Mining/Copper Vein"] == 1 and not zone["Mining/Poor Copper"], "its ore, without what it ignores")
+    local zones = {}
+    for _, m in ipairs(GP:GatherZones()) do zones[m] = true end
+    check(zones[MAP], "its zones are listed")
+    local route = GP:NewRoute({ mapID = MAP, kinds = { ["Herb Gathering"] = { Peacebloom = true } }, sight = 0 })
+    RunJobs()
+    check(route and GP:NodeCount(route) == 6, "a route from GatherLite's nodes")
+    GP:OpenConfig("about")
+    check(GP.ui.aboutStatus, "About shows where nodes come from")
+
+    -- a node GatherLite finds later joins the route (Gatherline listens from login on)
+    FireEvent("PLAYER_LOGIN")
+    GP.db.autoAdd = true
+    Add("herbalism", 1618, MAP, 0.45, 0.70)
+    check(GP:NodeCount(route) == 7, "GatherLite's new node joined the route")
+
+    -- both: a node both know counts once, the rest all count
+    GatherMate2 = gmWas
+    check(GP:SourceNames() == "GatherMate2 + GatherLite", "both")
+    local before = 0
+    for _, n in ipairs(GP:ZoneNodes(E)) do if n.name == "Copper Vein" then before = n.count end end
+    local gmX, gmY
+    GP:EachNode(E, "Mining", function(x, y, name) if name == "Copper Vein" and not gmX then gmX, gmY = x, y end end)
+    check(gmX, "GatherMate2 has copper in Elwynn")
+    local w = GP:MapYards(E)
+    Add("mining", 1731, E, gmX + 5 / w, gmY, true)        -- 5 yards off GatherMate2's: the same node
+    Add("mining", 1731, E, 0.95, 0.95, true)               -- far from any: a new one
+    local after = 0
+    for _, n in ipairs(GP:ZoneNodes(E)) do if n.name == "Copper Vein" then after = n.count end end
+    check(after == before + 1, ("the same node counts once, a new one adds (%d -> %d)"):format(before, after))
+
+    GP:DeleteRoute(route)
+    RunJobs()
+    for t in pairs(glNodes) do glNodes[t] = {} end
+    LibStub = hadStub
+    check(GP:SourceNames() == "GatherMate2", "GatherLite gone again")
+end
+
 STEP("without GatherMate2")
 GatherMate2 = nil
 check(not GP:HasGatherMate())
-check(GP:NewRoute({ mapID = E, kinds = { Mining = { ["Copper Vein"] = true } } }) == nil and logHas("needs GatherMate2"))
+check(GP:NewRoute({ mapID = E, kinds = { Mining = { ["Copper Vein"] = true } } }) == nil and logHas("needs GatherMate2 or GatherLite"))
 GP:OpenConfig("new")
 check(#GP:ZoneNodes(E) == 0)
 GP:OpenConfig("routes")

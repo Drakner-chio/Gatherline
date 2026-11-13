@@ -1,5 +1,14 @@
 # Gatherline
 
+## v1.1.0
+
+- **GatherLite support:** Gatherline now makes routes from GatherLite's nodes too –
+  including the WoW Forever node database GatherLite comes with. GatherMate2 is no longer
+  required: either one is enough. With both, a node both know counts once.
+- New nodes GatherLite records join your routes like GatherMate2's do.
+- GatherLite's ignored nodes stay out of routes.
+- The About page shows which node sources were found.
+
 ## v1.0.1
 
 - Fixed Lua errors in `Routing/PathGrid.lua` ("bad argument #1 to 'byte'") while a route was

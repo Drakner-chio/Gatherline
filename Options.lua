@@ -180,7 +180,7 @@ local function BuildRoutes(p)
         end)
         r.delete:SetPoint("TOPRIGHT", -10, -10)
         r.rebuild = Action("Interface\\Buttons\\UI-RefreshButton", "Rebuild",
-            "Reads this route's nodes from GatherMate2 again (it may know more by now) and finds the shortest loop again.",
+            "Reads this route's nodes again (GatherMate2 or GatherLite may know more by now) and finds the shortest loop again.",
             function(route) GP:RebuildRoute(route) end)
         r.rebuild:SetPoint("RIGHT", r.delete, "LEFT", -4, 0)
         r.edit = Action("Interface\\Buttons\\UI-GuildButton-PublicNote-Up", "Edit",
@@ -273,9 +273,9 @@ local function BuildRoutes(p)
         for i = #routes + 1, #rows do rows[i]:Hide(); rows[i].route = nil end
         scroll:SetContent(PAGE_W - 16, math.max(1, #routes * ROW_H), true)
         if #routes == 0 then
-            empty:SetText(GP:HasGatherMate()
-                and "No routes in this zone yet. Click New route to make one."
-                or "Gatherline needs GatherMate2, where the herb and ore nodes come from. Install it from CurseForge, then /reload.")
+            empty:SetText(GP:HasNodeSource()
+                and L["No routes in this zone yet. Click New route to make one."]
+                or L["Gatherline needs GatherMate2 or GatherLite, where the herb and ore nodes come from. Install one from CurseForge, then /reload."])
         else
             empty:SetText(L[""])
         end
@@ -561,12 +561,12 @@ local function BuildNew(p, page)
         for i = ns_ + 1, #switches do switches[i]:Hide(); switches[i].label:Hide(); switches[i].entry = nil end
         scroll:SetContent(PAGE_W - 30, math.max(1, -yy), true)
 
-        if not GP:HasGatherMate() then
-            note:SetText(L["Gatherline needs GatherMate2, where the herb and ore nodes come from. Install it from CurseForge, then /reload."])
+        if not GP:HasNodeSource() then
+            note:SetText(L["Gatherline needs GatherMate2 or GatherLite, where the herb and ore nodes come from. Install one from CurseForge, then /reload."])
         elseif not newZone then
             note:SetText(L["Pick a zone above, or click My zone for the one you're in."])
         elseif #nodes == 0 then
-            note:SetText(L["GatherMate2 has no nodes in %s yet. Gather there (or import GatherMate2 data), then come back."]:format(GP:MapName(newZone)))
+            note:SetText(L["%s has no nodes in %s yet. Gather there, then come back."]:format(GP:SourceNames(), GP:MapName(newZone)))
         else
             note:SetText(L[""])
         end
@@ -815,7 +815,7 @@ local function BuildDisplay(p)
 
     local card2 = Card(p, "More", 0, -324, PAGE_W, 78)
     Setting(card2, "Add new nodes to routes", 12, -30, "autoAdd",
-        "When GatherMate2 records a node you just found, it joins the routes in that zone that have its kind, where it adds the least walking.")
+        "When GatherMate2 or GatherLite records a node you just found, it joins the routes in that zone that have its kind, where it adds the least walking.")
     Setting(card2, "Minimap button", COL2, -30, "minimapButton",
         "The Gatherline button on the minimap: left-click opens this window, right-click shows or hides the lines.",
         function() GP:UpdateMinimapButton() end)
@@ -871,7 +871,7 @@ local function BuildRiding(p)
     drop:SetPoint("TOPLEFT", 110, -30)
     refs.navLabel = drop
     AddRefresher(drop.Refresh)
-    T.Note(card2, "What the arrow and the tracker call each stop. \"What's there\" names the nodes the stop takes you past (as GatherMate2 names them); a stop with none keeps its number. Changes show from the next stops handed over.", 12, -60, PAGE_W - 24)
+    T.Note(card2, "What the arrow and the tracker call each stop. \"What's there\" names the nodes the stop takes you past (as GatherMate2 or GatherLite names them); a stop with none keeps its number. Changes show from the next stops handed over.", 12, -60, PAGE_W - 24)
 
     local card4 = Card(p, "On the map while you ride", 0, -220, PAGE_W, 90)
     refs.arrowsSwitch = Setting(card4, "Show arrows", 12, -30, "arrows",
@@ -911,12 +911,12 @@ end
 
 local function BuildAbout(p)
     local card = Card(p, "Needs", 0, 0, PAGE_W, 196)
-    local gm = StatusLine(card, -32, "GatherMate2", "Where the herb and ore nodes come from. Without it there's nothing to make routes of.")
+    local gm = StatusLine(card, -32, "GatherMate2 or GatherLite", "Where the herb and ore nodes come from: either, or both (a node both know counts once). Without one there's nothing to make routes of.")
     local spf = StatusLine(card, -82, "Shortest Path Forever", "The guidance (arrow and tracker) for Start, and the walking maps routes are measured on. It needs ForeverCore.")
     local maps = StatusLine(card, -132, "Walking map here", "Shortest Path's walking maps for the continent you're on: routes here follow the ground.")
     AddRefresher(function()
-        local hasGM = GP:HasGatherMate()
-        gm(hasGM, hasGM and L["found"] or L["missing"])
+        local has = GP:HasNodeSource()
+        gm(has, has and GP:SourceNames() or L["missing"])
         local hasSPF = GP:CanNavigate()
         spf(hasSPF, hasSPF and L["found"] or L["missing"])
         local mapID = GP:PlayerMap()

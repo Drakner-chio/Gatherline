@@ -4,7 +4,7 @@ Gathering routes for **World of Warcraft: Forever**: the shortest loop through y
 
 ## Features
 
-- **Routes from your GatherMate2 nodes:** pick a zone and what to gather (Peacebloom, Copper Vein, whole kinds…), Gatherline finds the shortest loop
+- **Routes from your GatherMate2 or GatherLite nodes** (or both – a node both know counts once): pick a zone and what to gather (Peacebloom, Copper Vein, whole kinds…), Gatherline finds the shortest loop
 - **Over the real ground:** with Shortest Path Forever installed, routes are measured on the game's walking maps. Five candidate loops are walked leg by leg and polished, the shortest on foot wins – round mountains, cliffs and water instead of over them. Never longer than a straight-line route
 - **Lines along the ground:** the route is drawn the way you'd actually ride it
 - **Passes within:** with Find Herbs or Find Minerals on, the route only has to come close enough to see each node, so it cuts corners and nodes close together become one stop
@@ -20,7 +20,7 @@ Gathering routes for **World of Warcraft: Forever**: the shortest loop through y
 
 | Addon | What for | Needed? |
 |---|---|---|
-| **GatherMate2** | The nodes routes are made from | yes |
+| **GatherMate2** or **GatherLite** | The nodes routes are made from (either, or both) | one of them |
 | **Shortest Path Forever** (with **ForeverCore**) | Walking maps for routes over the ground, and the guidance for Start | recommended – without it routes use straight lines and there's no Start |
 
 The **About** page in the window shows whether everything is there.

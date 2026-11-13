@@ -210,6 +210,22 @@ ns.TRANSLATIONS.deDE = {
     ["Right-click: show or hide the lines"] = "Rechtsklick: Linien zeigen oder ausblenden",
     ["Drag: move this button"] = "Ziehen: Knopf verschieben",
 
+    -- Datenquellen (GatherMate2 / GatherLite)
+    ["GatherMate2 or GatherLite"] = "GatherMate2 oder GatherLite",
+    ["Where the herb and ore nodes come from: either, or both (a node both know counts once). Without one there's nothing to make routes of."] = "Daher kommen die Kräuter- und Erzvorkommen: eins von beiden oder beide (ein Vorkommen, das beide kennen, zählt einmal). Ohne gibt es nichts, woraus Routen entstehen.",
+    ["Gatherline needs GatherMate2 or GatherLite, where the herb and ore nodes come from. Install one from CurseForge, then /reload."] = "Gatherline braucht GatherMate2 oder GatherLite, daher kommen die Kräuter- und Erzvorkommen. Eins davon von CurseForge installieren, dann /reload.",
+    ["%s has no nodes in %s yet. Gather there, then come back."] = "%s kennt in %s noch keine Vorkommen. Dort sammeln, dann wiederkommen.",
+    ["Reads this route's nodes again (GatherMate2 or GatherLite may know more by now) and finds the shortest loop again."] = "Liest die Vorkommen dieser Route neu (GatherMate2 oder GatherLite kennen vielleicht inzwischen mehr) und sucht die kürzeste Runde neu.",
+    ["When GatherMate2 or GatherLite records a node you just found, it joins the routes in that zone that have its kind, where it adds the least walking."] = "Wenn GatherMate2 oder GatherLite ein neu gefundenes Vorkommen speichert, kommt es in die Routen dieser Zone mit dieser Art, dort, wo es den wenigsten Umweg macht.",
+    ["What the arrow and the tracker call each stop. \"What's there\" names the nodes the stop takes you past (as GatherMate2 or GatherLite names them); a stop with none keeps its number. Changes show from the next stops handed over."] = "Wie Pfeil und Tracker jeden Wegpunkt nennen. „Was dort ist“ nennt die Vorkommen, an denen dich der Wegpunkt vorbeiführt (wie GatherMate2 oder GatherLite sie nennen); ein Wegpunkt ohne behält seine Nummer. Änderungen gelten ab den nächsten übergebenen Wegpunkten.",
+    ["needs GatherMate2 or GatherLite, where the nodes come from."] = "braucht GatherMate2 oder GatherLite, daher kommen die Vorkommen.",
+    ["needs |cffffd100GatherMate2|r or |cffffd100GatherLite|r for its herb and ore nodes. Install one from CurseForge, then /reload."] = "braucht |cffffd100GatherMate2|r oder |cffffd100GatherLite|r für die Kräuter- und Erzvorkommen. Eins davon von CurseForge installieren, dann /reload.",
+    ["there's no node of those kinds in %s, so there's no route to make."] = "in %s gibt es kein Vorkommen dieser Arten, also gibt es keine Route.",
+    ["there's only one node of those kinds in %s, so there's no route to make."] = "in %s gibt es nur ein Vorkommen dieser Arten, also gibt es keine Route.",
+    ["there's no node of those kinds in %s, so %s was left as it was."] = "in %s gibt es kein Vorkommen dieser Arten, also bleibt %s, wie sie war.",
+    ["there's only one node of those kinds in %s, so %s was left as it was."] = "in %s gibt es nur ein Vorkommen dieser Arten, also bleibt %s, wie sie war.",
+    ["there are no nodes for %s now, so it was left as it was."] = "für %s gibt es gerade keine Vorkommen, also bleibt sie, wie sie war.",
+
     -- Chat
     ["commands:"] = "Befehle:",
     ["routes and options"] = "Routen und Einstellungen",

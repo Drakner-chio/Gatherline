@@ -5,7 +5,7 @@
 ## Author: Drakner-chio
 ## Version: @project-version@
 ## IconTexture: Interface\AddOns\Gatherline\media\Logo
-## OptionalDeps: GatherMate2, ShortestPathForever, GatherPathPlus, GatherPathForever
+## OptionalDeps: GatherMate2, GatherLite, ShortestPathForever, GatherPathPlus, GatherPathForever
 ## SavedVariables: GatherlineDB
 ## X-License: GPL-3.0-or-later
 ## X-Website: https://github.com/Drakner-chio/Gatherline
@@ -17,6 +17,7 @@ Locale_deDE.lua
 Theme.lua
 Optimize.lua
 Core.lua
+Sources.lua
 Pin.xml
 Routing\PathGrid.lua
 Routing\Path.lua

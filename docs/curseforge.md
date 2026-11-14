@@ -64,7 +64,7 @@ The **Guidance** page decides how the ride feels:
 | Addon | What for | |
 |---|---|---|
 | **GatherMate2** or **GatherLite** | The nodes routes are made from – either one, or both (a node both know counts once) | one of them required |
-| **Shortest Path Forever** (with **ForeverCore**) | Walking maps for routes over the ground, and the arrow and tracker for Start | recommended – without it routes use straight lines and there's no Start |
+| **Shortest Path Forever** (with **ForeverCore**) | Walking maps for routes over the ground, the guidance for Start, tours and the HUD | **yes** – installed with Gatherline by the CurseForge app (without it, routes use straight lines and there's no Start, guidance or HUD) |
 | **Auctionator** | What your loot is worth, for gold an hour in the statistics | optional |
 
 The **About** page in the window shows whether everything is there.

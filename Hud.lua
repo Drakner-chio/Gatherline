@@ -29,6 +29,9 @@ GP.HUD_DEFAULTS = {
     pos = {},
 }
 GP.HUD_RANGES = { scale = { 60, 160 }, alpha = { 30, 100 }, lensRange = { 50, 200 } }
+-- each part's own look: size, text size and opacity (%)
+GP.HUD_PART_KEYS = { "compass", "lens", "card" }
+GP.HUD_PART_RANGES = { scale = { 50, 200 }, font = { 70, 160 }, alpha = { 20, 100 } }
 GP.HUD_PLACES = {
     compass = { "TOP", 0, -28 },
     lens = { "BOTTOM", 0, 150 },
@@ -54,7 +57,23 @@ function GP:HudSettings()
         if type(h[k]) ~= type(v) then h[k] = type(v) == "table" and {} or v end
     end
     for k, r in pairs(self.HUD_RANGES) do h[k] = max(r[1], min(r[2], floor(h[k]))) end
+    if type(h.parts) ~= "table" then h.parts = {} end
+    for _, key in ipairs(self.HUD_PART_KEYS) do
+        local pt = h.parts[key]
+        if type(pt) ~= "table" then
+            -- (before 1.7.1 one size and opacity for all)
+            pt = { scale = h.scale, alpha = h.alpha, font = 100 }
+            h.parts[key] = pt
+        end
+        for k, r in pairs(self.HUD_PART_RANGES) do
+            pt[k] = max(r[1], min(r[2], floor(tonumber(pt[k]) or (k == "alpha" and 90 or 100))))
+        end
+    end
     return h
+end
+
+function GP:HudPart(key)
+    return self:HudSettings().parts[key]
 end
 
 ---------------------------------------------------------------------------
@@ -105,9 +124,11 @@ local function Panel(f)
     T.Fill(f, { C.win[1], C.win[2], C.win[3], 0.80 })
     T.Border(f, C.line)
 end
+local building   -- the part being built: its texts are noted, for its text size
 local function Label(parent, size, color)
     local fs = Text(parent, "", "GameFontHighlight", color or C.text, size)
     if fs.SetShadowOffset then fs:SetShadowOffset(1, -1); fs:SetShadowColor(0, 0, 0, 0.9) end
+    if building then building.labels[#building.labels + 1] = { fs = fs, size = size } end
     return fs
 end
 local function Tex(parent, layer, file)
@@ -152,7 +173,18 @@ local function Part(key, w, h)
     f.handle = Tex(f, "BACKGROUND")
     f.handle:SetAllPoints()
     f.handle:SetColorTexture(C.accent[1], C.accent[2], C.accent[3], 0.12)
+    -- while unlocked: the mouse wheel over a part makes it bigger or smaller
+    f:SetScript("OnMouseWheel", function(self, delta)
+        if GP:HudSettings().locked then return end
+        local pt = GP:HudPart(key)
+        local r = GP.HUD_PART_RANGES.scale
+        pt.scale = max(r[1], min(r[2], pt.scale + (delta > 0 and 5 or -5)))
+        GP:UpdateHud()
+        if GP.RefreshConfig then GP:RefreshConfig() end
+    end)
     f.key = key
+    f.labels = {}
+    building = f
     f:Hide()
     parts[key] = f
     return f
@@ -180,9 +212,17 @@ local function Place(f)
     else
         f:SetPoint(d[1], UIParent, d[1], d[2], d[3])
     end
-    f:SetScale(h.scale / 100)
-    f:SetAlpha(h.alpha / 100)
+    local pt = GP:HudPart(f.key)
+    f:SetScale(pt.scale / 100)
+    f:SetAlpha(pt.alpha / 100)
+    if f.font ~= pt.font then
+        f.font = pt.font
+        for _, l in ipairs(f.labels) do
+            if l.fs.SetFont then pcall(l.fs.SetFont, l.fs, T.FONT, max(7, floor(l.size * pt.font / 100 + 0.5)), "") end
+        end
+    end
     f:EnableMouse(not h.locked)
+    if f.EnableMouseWheel then f:EnableMouseWheel(not h.locked) end
     f.handle:SetShown(not h.locked)
 end
 
@@ -603,6 +643,7 @@ local function Build()
     BuildCompass()
     BuildLens()
     BuildCard()
+    building = nil
     for _, f in pairs(parts) do Place(f) end
 end
 

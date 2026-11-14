@@ -416,12 +416,12 @@ ns.TRANSLATIONS.deDE = {
     ["How far round you the ground lens shows the route."] = "Wie weit um dich herum die Bodenlinse die Route zeigt.",
     ["Place"] = "Position",
     ["Move the parts"] = "Teile verschieben",
-    ["Drag each part where you like (they show tinted). Switch it off again to fix them and let clicks through."] = "Zieh jedes Teil, wohin du willst (sie erscheinen getönt). Wieder ausschalten, um sie festzumachen und Klicks durchzulassen.",
+    ["Drag each part where you like (they show tinted), and turn the mouse wheel over one to make it bigger or smaller. Switch it off again to fix them and let clicks through."] = "Zieh jedes Teil, wohin du willst (sie erscheinen getönt), und dreh das Mausrad über einem Teil, um es größer oder kleiner zu machen. Wieder ausschalten, um sie festzumachen und Klicks durchzulassen.",
     ["Preview"] = "Vorschau",
     ["End preview"] = "Vorschau beenden",
     ["Shows the HUD with made-up stops round you, to try it out and place it without riding."] = "Zeigt das HUD mit ausgedachten Wegpunkten um dich, zum Ausprobieren und Platzieren ohne zu reiten.",
     ["Back to their places"] = "Zurück an ihren Platz",
-    ["Puts every part back where it started."] = "Setzt jedes Teil an seinen Anfangsplatz zurück.",
+    ["Puts every part back where it started, at its first size, text size and opacity."] = "Setzt jedes Teil an seinen Anfangsplatz zurück, mit Größe, Schriftgröße und Deckkraft vom Anfang.",
     ["The HUD shows while you ride a route or a tour. /gl hud switches it all off and on."] = "Das HUD erscheint, während du eine Route oder Tour reitest. /gl hud schaltet alles aus und an.",
     ["%d yd"] = "%d m",
     ["straight on"] = "geradeaus",
@@ -460,5 +460,12 @@ ns.TRANSLATIONS.deDE = {
     ["Dots"] = "Punkte",
     ["How routes are drawn on the world map: a solid line, dashes or dots. The width above sets how thick (dots: how big)."] = "Wie Routen auf der Weltkarte gezeichnet werden: als Linie, Striche oder Punkte. Die Breite darüber bestimmt, wie dick (bei Punkten: wie groß).",
     ["How routes are drawn on the minimap: a solid line, dashes or dots. The width above sets how thick (dots: how big)."] = "Wie Routen auf der Minimap gezeichnet werden: als Linie, Striche oder Punkte. Die Breite darüber bestimmt, wie dick (bei Punkten: wie groß).",
+    -- HUD je Teil (1.7.1)
+    ["Part"] = "Teil",
+    ["Which part of the HUD the sliders below set. Each part keeps its own size, text size and opacity."] = "Welches Teil des HUD die Regler darunter einstellen. Jedes Teil hat eigene Größe, Schriftgröße und Deckkraft.",
+    ["Text size"] = "Schriftgröße",
+    ["How big the part is, all of it. While Move the parts is on, the mouse wheel over a part does the same."] = "Wie groß das ganze Teil ist. Solange „Teile verschieben“ an ist, geht das auch mit dem Mausrad über dem Teil.",
+    ["How big the part's writing is, on top of its size."] = "Wie groß die Schrift im Teil ist, zusätzlich zur Größe.",
+    ["How see-through the part is."] = "Wie durchsichtig das Teil ist.",
 }
 ns.UseTranslations()

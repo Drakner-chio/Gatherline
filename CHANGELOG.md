@@ -1,5 +1,12 @@
 # Gatherline
 
+## v1.7.1
+
+- **Each HUD part its own look:** compass band, ground lens and lap card each keep their
+  own size, text size and opacity (*Gathering HUD → Look*, pick the part first).
+- While *Move the parts* is on, the mouse wheel over a part makes it bigger or smaller.
+- *Back to their places* also puts sizes, text sizes and opacity back.
+
 ## v1.7.0
 
 - **Line width in halves:** world map and minimap line widths now go in steps of 0.5,

@@ -1187,22 +1187,41 @@ local function BuildHud(p)
     refs.hudCombat = HudSwitch(card, "Show in combat", COL2, -30, "combat",
         "Off: the HUD steps aside while you fight.")
 
-    local card2 = Card(p, "Look", 0, -130, PAGE_W, 112)
-    local function HudSlider(text, x, y, key, suffix, step)
-        local r = GP.HUD_RANGES[key]
+    -- each part's look: pick the part, then its size, text size and opacity
+    local card2 = Card(p, "Look", 0, -130, PAGE_W, 156)
+    local hudPart = "compass"
+    local PART_NAMES = { compass = "Compass band", lens = "Ground lens", card = "Lap card" }
+    local partLabel = Text(card2, "Part", "GameFontHighlight")
+    partLabel:SetPoint("TOPLEFT", 12, -36)
+    local pick = T.Dropdown(card2, 200, GP.HUD_PART_KEYS, function(k) return L[PART_NAMES[k]] end,
+        function() return hudPart end,
+        function(k) hudPart = k; GP:RefreshConfig() end)
+    pick:SetPoint("TOPLEFT", 64, -28)
+    T.Tooltip(pick, "Part", "Which part of the HUD the sliders below set. Each part keeps its own size, text size and opacity.")
+    AddRefresher(function() pick:Refresh() end)
+    refs.hudPart = pick
+    local function PartSlider(text, x, y, key, tip)
+        local r = GP.HUD_PART_RANGES[key]
         local sl = T.Slider(card2, text, x, y, 244,
-            function() return GP:HudSettings()[key] end,
-            function(v) GP:HudSettings()[key] = v; GP:UpdateHud() end,
-            r[1], r[2], suffix, step)
+            function() return GP:HudPart(hudPart)[key] end,
+            function(v) GP:HudPart(hudPart)[key] = v; GP:UpdateHud() end,
+            r[1], r[2], "%", 5)
+        T.Tooltip(sl, text, tip)
         AddRefresher(sl.Refresh)
         return sl
     end
-    refs.hudScale = HudSlider("Size", 12, -30, "scale", "%", 5)
-    refs.hudAlpha = HudSlider("Opacity", COL2, -30, "alpha", "%", 5)
-    refs.hudRange = HudSlider("Lens reach", 12, -74, "lensRange", " yards", 10)
+    refs.hudScale = PartSlider("Size", 12, -70, "scale", "How big the part is, all of it. While Move the parts is on, the mouse wheel over a part does the same.")
+    refs.hudFont = PartSlider("Text size", COL2, -70, "font", "How big the part's writing is, on top of its size.")
+    refs.hudAlpha = PartSlider("Opacity", 12, -114, "alpha", "How see-through the part is.")
+    local r = GP.HUD_RANGES.lensRange
+    refs.hudRange = T.Slider(card2, "Lens reach", COL2, -114, 244,
+        function() return GP:HudSettings().lensRange end,
+        function(v) GP:HudSettings().lensRange = v; GP:UpdateHud() end,
+        r[1], r[2], " yards", 10)
+    AddRefresher(refs.hudRange.Refresh)
     T.Tooltip(refs.hudRange, "Lens reach", "How far round you the ground lens shows the route.")
 
-    local card3 = Card(p, "Place", 0, -248, PAGE_W, 112)
+    local card3 = Card(p, "Place", 0, -292, PAGE_W, 112)
     refs.hudMove = T.LabeledSwitch(card3, "Move the parts", 12, -30)
     refs.hudMove:SetScript("OnClick", function(self)
         local h = GP:HudSettings()
@@ -1211,7 +1230,7 @@ local function BuildHud(p)
         GP:UpdateHud(true)
         GP:RefreshConfig()
     end)
-    T.Tooltip(refs.hudMove, "Move the parts", "Drag each part where you like (they show tinted). Switch it off again to fix them and let clicks through.")
+    T.Tooltip(refs.hudMove, "Move the parts", "Drag each part where you like (they show tinted), and turn the mouse wheel over one to make it bigger or smaller. Switch it off again to fix them and let clicks through.")
     AddRefresher(function() refs.hudMove:SetOn(not GP:HudSettings().locked) end)
     local preview = FlatButton(card3, "Preview", 120, 24)
     preview:SetPoint("TOPLEFT", 12, -70)
@@ -1228,10 +1247,13 @@ local function BuildHud(p)
     local reset = FlatButton(card3, "Back to their places", 170, 24)
     reset:SetPoint("LEFT", preview, "RIGHT", 8, 0)
     reset:SetScript("OnClick", function()
-        GP:HudSettings().pos = {}
+        local h = GP:HudSettings()
+        h.pos, h.parts = {}, nil
+        GP:HudSettings()
         GP:UpdateHud(true)
+        GP:RefreshConfig()
     end)
-    T.Tooltip(reset, "Back to their places", "Puts every part back where it started.")
+    T.Tooltip(reset, "Back to their places", "Puts every part back where it started, at its first size, text size and opacity.")
     refs.hudReset = reset
     T.Note(card3, "The HUD shows while you ride a route or a tour. /gl hud switches it all off and on.", COL2, -30, PAGE_W - COL2 - 12)
 end

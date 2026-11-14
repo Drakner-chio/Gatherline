@@ -1970,7 +1970,7 @@ do
 
     local parts = GP.hudParts
     local hs = GP:HudSettings()
-    check(hs.compass and hs.card and not hs.lens and hs.scale == 100, "compass and lap card on to start with")
+    check(hs.compass and hs.card and not hs.lens and hs.parts.card.scale == 100 and hs.parts.card.font == 100, "compass and lap card on to start with")
     PLAYER.map, PLAYER.x, PLAYER.y = E, 0.5, 0.5
     GetPlayerFacing = function() return 0.3 end
     -- nothing while not riding
@@ -2026,8 +2026,19 @@ do
     check(not hs.locked and GP.hudPreview, "moving: unlocked, with the preview")
     parts.card:GetScript("OnDragStop")(parts.card)
     check(type(hs.pos.card) == "table", "a dragged part keeps its place")
+    -- each part its own size, text size, opacity; the wheel resizes while unlocked
+    ui.hudPart.Choose("card")
+    ui.hudScale:SetValue(140)
+    ui.hudFont:SetValue(130)
+    ui.hudAlpha:SetValue(60)
+    check(hs.parts.card.scale == 140 and hs.parts.card.font == 130 and hs.parts.card.alpha == 60
+        and hs.parts.compass.scale == 100, "the lap card's own look, the band's unchanged")
+    check(parts.card.__scale == 1.4 and parts.card.__alpha == 0.6, "applied to the card")
+    check(parts.card.name.__fontSize == math.floor(17 * 1.3 + 0.5), "its writing bigger: " .. tostring(parts.card.name.__fontSize))
+    parts.compass:GetScript("OnMouseWheel")(parts.compass, 1)
+    check(hs.parts.compass.scale == 105, "mouse wheel: band bigger")
     Click(ui.hudReset)
-    check(next(hs.pos) == nil, "and goes back")
+    check(next(hs.pos) == nil and hs.parts.card.scale == 100 and hs.parts.compass.scale == 100, "and all goes back")
     Click(ui.hudMove)
     check(hs.locked, "fixed again")
     Click(ui.hudPreview)

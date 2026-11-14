@@ -803,12 +803,12 @@ local function Setting(parent, text, x, y, key, tip, after)
     return sw
 end
 
-local function Slider(parent, text, x, y, key, suffix, tip)
+local function Slider(parent, text, x, y, key, suffix, tip, step, fmt)
     local r = GP.RANGES[key]
     local s = T.Slider(parent, text, x, y, 244,
         function() return GP.db[key] end,
         function(v) GP.db[key] = v; GP:Changed() end,
-        r[1], r[2], suffix)
+        r[1], r[2], suffix, step, fmt)
     if tip then T.Tooltip(s, text, tip) end
     AddRefresher(s.Refresh)
     return s
@@ -838,19 +838,40 @@ local function LineColor(parent, x, y, where, place)
 end
 
 local function BuildDisplay(p)
-    local card = Card(p, "Lines", 0, 0, PAGE_W, 214)
+    local card = Card(p, "Lines", 0, 0, PAGE_W, 258)
     refs.worldSwitch = Setting(card, "On the world map", 12, -30, "worldMap",
         "Draw the routes on the world map, on their zone's map (and thinner on the continent's).")
     refs.minimapSwitch = Setting(card, "On the minimap", COL2, -30, "minimap",
         "Draw the routes on the minimap, round you.")
-    Slider(card, "World map line width", 12, -64, "worldWidth")
-    Slider(card, "Minimap line width", COL2, -64, "minimapWidth")
+    -- widths in halves: 0,5 · 1 · 1,5 ... (with the game's decimal sign)
+    local function Half(v)
+        local s = (v % 1 == 0) and ("%d"):format(v) or ("%.1f"):format(v)
+        return (s:gsub("%.", L["."]))
+    end
+    refs.worldWidth = Slider(card, "World map line width", 12, -64, "worldWidth", nil, nil, 0.5, Half)
+    refs.minimapWidth = Slider(card, "Minimap line width", COL2, -64, "minimapWidth", nil, nil, 0.5, Half)
     refs.worldAlpha = Slider(card, "World map opacity", 12, -108, "worldAlpha", "%")
     refs.minimapAlpha = Slider(card, "Minimap opacity", COL2, -108, "minimapAlpha", "%")
     refs.worldRouteColor, refs.worldColor = LineColor(card, 12, -152, "world", "on the world map")
     refs.minimapRouteColor, refs.minimapColor = LineColor(card, COL2, -152, "minimap", "on the minimap")
+    -- how the routes are drawn: a line, dashes or dots
+    local STYLE_NAMES = { line = "Solid line", dashes = "Dashes", dots = "Dots" }
+    local function StylePick(x, key, where)
+        local label = Text(card, "Style", "GameFontHighlight")
+        label:SetPoint("TOPLEFT", x, -222)
+        local d = T.Dropdown(card, 180, GP.LINE_STYLES, function(k) return L[STYLE_NAMES[k] or k] end,
+            function() return GP.db[key] end,
+            function(k) GP.db[key] = k; GP:Changed() end)
+        d:SetPoint("TOPLEFT", x + 64, -214)
+        T.Tooltip(d, "Style", where == "world" and "How routes are drawn on the world map: a solid line, dashes or dots. The width above sets how thick (dots: how big)."
+            or "How routes are drawn on the minimap: a solid line, dashes or dots. The width above sets how thick (dots: how big).")
+        AddRefresher(function() d:Refresh() end)
+        return d
+    end
+    refs.worldStyle = StylePick(12, "worldStyle", "world")
+    refs.minimapStyle = StylePick(COL2, "minimapStyle", "minimap")
 
-    local card3 = Card(p, "Range circle", 0, -220, PAGE_W, 98)
+    local card3 = Card(p, "Range circle", 0, -264, PAGE_W, 98)
     refs.rangeSwitch = Setting(card3, "On the minimap", 12, -30, "range",
         "A circle round you on the minimap, as far as Find Herbs and Find Minerals show nodes, so you can see how close you need to get. Set the yards below.")
     local swatch = Swatch(card3,
@@ -866,7 +887,7 @@ local function BuildDisplay(p)
         "How far round you the circle is drawn. Find Herbs and Find Minerals show nodes about 100 yards away.")
     refs.rangeAlpha = Slider(card3, "Circle opacity", COL2, -58, "rangeAlpha", "%")
 
-    local card2 = Card(p, "More", 0, -324, PAGE_W, 78)
+    local card2 = Card(p, "More", 0, -368, PAGE_W, 78)
     Setting(card2, "Add new nodes to routes", 12, -30, "autoAdd",
         "When GatherMate2 or GatherLite records a node you just found, it joins the routes in that zone that have its kind, where it adds the least walking.")
     Setting(card2, "Minimap button", COL2, -30, "minimapButton",
@@ -876,7 +897,7 @@ local function BuildDisplay(p)
         12, -56, PAGE_W - 24)
 
     local restore = FlatButton(p, "Restore defaults", 150, 22)
-    restore:SetPoint("TOPLEFT", 0, -410)
+    restore:SetPoint("TOPLEFT", 0, -454)
     T.Tooltip(restore, "Restore defaults", "Put every setting on this tab back as it was to start. Your routes are kept.")
     restore:SetScript("OnClick", function()
         GP:Confirm(L["Put every setting on the Display tab back as it was to start? Your routes are kept."],

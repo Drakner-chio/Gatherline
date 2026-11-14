@@ -25,8 +25,10 @@ GP.LOGO_TEXT = "|T" .. GP.ICON .. ":0|t"
 GP.DEFAULTS = {
     worldMap = true,       -- draw routes on the world map
     minimap = true,        -- and on the minimap
-    worldWidth = 4,        -- line width on the world map
+    worldWidth = 4,        -- line width on the world map (in halves: 0.5, 1, 1.5 ...)
     minimapWidth = 3,      -- and on the minimap
+    worldStyle = "line",   -- how routes are drawn there: "line", "dashes" or "dots"
+    minimapStyle = "line",
     worldAlpha = 85,       -- line opacity on the world map (percent)
     minimapAlpha = 85,     -- and on the minimap
     worldRouteColor = true,    -- world map lines in each route's own color
@@ -57,15 +59,15 @@ GP.DEFAULTS = {
 -- The settings on the Display tab, which its Restore defaults button puts back
 -- (not routes, the minimap button's place, New route's slider or the remembered speed)
 GP.DISPLAY_KEYS = {
-    "worldMap", "minimap", "worldWidth", "minimapWidth", "worldAlpha", "minimapAlpha",
+    "worldMap", "minimap", "worldWidth", "minimapWidth", "worldAlpha", "minimapAlpha", "worldStyle", "minimapStyle",
     "worldRouteColor", "minimapRouteColor", "worldColor", "minimapColor",
     "arrows", "arrowsReverse", "joinLine",
     "range", "rangeYards", "rangeAlpha", "rangeColor",
     "autoAdd", "minimapButton",
 }
 GP.RANGES = {
-    worldWidth = { 1, 10 },
-    minimapWidth = { 1, 8 },
+    worldWidth = { 0.5, 10 },
+    minimapWidth = { 0.5, 8 },
     worldAlpha = { 10, 100 },
     minimapAlpha = { 10, 100 },
     rangeYards = { 20, 200 },
@@ -111,6 +113,11 @@ function GP:LoadSettings()
         if db.minimapAlpha == nil then db.minimapAlpha = db.alpha end
     end
     db.alpha = nil
+    for _, k in ipairs({ "worldStyle", "minimapStyle" }) do
+        local ok = false
+        for _, s in ipairs(self.LINE_STYLES) do ok = ok or db[k] == s end
+        if not ok then db[k] = nil end
+    end
     for k, v in pairs(self.DEFAULTS) do
         if type(v) == "table" then
             local c = db[k]
@@ -1347,6 +1354,82 @@ local function Paint(line, c, alpha, width)
     line:SetThickness(width)
 end
 
+-- A pool of round dots (textures) on a frame, like LinePool
+local DOT_TEXTURE = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
+local function DotPool(frame, layer)
+    local pool = { dots = {}, used = 0 }
+    function pool:Begin() self.used = 0 end
+    function pool:Get()
+        self.used = self.used + 1
+        local d = self.dots[self.used]
+        if not d then
+            d = frame:CreateTexture(nil, layer or "OVERLAY")
+            d:SetTexture(DOT_TEXTURE)
+            self.dots[self.used] = d
+        end
+        d:Show()
+        return d
+    end
+    function pool:Done()
+        for i = self.used + 1, #self.dots do self.dots[i]:Hide() end
+    end
+    return pool
+end
+GP.DotPool = DotPool
+
+GP.LINE_STYLES = { "line", "dashes", "dots" }
+GP.DOT_SIZE = 1.8      -- a dot is this many line widths across ...
+GP.DOT_GAP = 2.6       -- ... and dots this many widths apart (centre to centre, at least 5 px)
+GP.DASH = { 3, 2 }     -- a dash this many widths long, then a gap this many (at least 4 / 3 px)
+
+-- Draws a route's leg from (ax, ay) to (bx, by) in a style. carry = how far
+-- into the pattern the leg starts (so dots and dashes run on evenly round
+-- corners); returns it for the next leg.
+local function Stroke(lines, dots, frame, anchor, ax, ay, bx, by, color, alpha, width, style, carry, px)
+    px = px or 1   -- one screen pixel in the frame's units (the world map is zoomed)
+    if style ~= "dots" and style ~= "dashes" then
+        local line = lines:Get()
+        Paint(line, color, alpha, width)
+        line:SetStartPoint(anchor, frame, ax, ay)
+        line:SetEndPoint(anchor, frame, bx, by)
+        return 0
+    end
+    local dx, dy = bx - ax, by - ay
+    local len = math.sqrt(dx * dx + dy * dy)
+    if len <= 0 then return carry or 0 end
+    local ux, uy = dx / len, dy / len
+    carry = carry or 0
+    if style == "dots" then
+        local gap = max(5 * px, width * GP.DOT_GAP)
+        local size = max(2 * px, width * GP.DOT_SIZE)
+        local t = (gap - carry) % gap
+        while t <= len do
+            local d = dots:Get()
+            d:SetVertexColor(color[1], color[2], color[3], alpha)
+            d:SetSize(size, size)
+            d:ClearAllPoints()
+            d:SetPoint("CENTER", frame, anchor, ax + ux * t, ay + uy * t)
+            t = t + gap
+        end
+        return (carry + len) % gap
+    end
+    local on, off = max(4 * px, width * GP.DASH[1]), max(3 * px, width * GP.DASH[2])
+    local period = on + off
+    local t = -(carry % period)
+    while t < len do
+        local s, e = max(0, t), min(len, t + on)
+        if e > s then
+            local line = lines:Get()
+            Paint(line, color, alpha, width)
+            line:SetStartPoint(anchor, frame, ax + ux * s, ay + uy * s)
+            line:SetEndPoint(anchor, frame, ax + ux * e, ay + uy * e)
+        end
+        t = t + period
+    end
+    return (carry + len) % period
+end
+GP.Stroke = Stroke
+
 -- The color a route's line is drawn in: its own, or the one picked for that map
 -- ("world" or "minimap") on the Display tab
 function GP:LineColor(route, where)
@@ -1449,6 +1532,7 @@ function Pin:OnLoad()
     self:SetIgnoreGlobalPinScale(true)
     self:UseFrameLevelType("PIN_FRAME_LEVEL_MAP_HIGHLIGHT")
     self.pool = LinePool(self, "OVERLAY")
+    self.dots = DotPool(self, "OVERLAY")
     self.arrows = LinePool(self, "OVERLAY")
     self.taboo = LinePool(self, "ARTWORK")   -- taboo areas, under the routes
     self.draft = LinePool(self, "OVERLAY")   -- the area being drawn
@@ -1588,6 +1672,7 @@ function Pin:Draw()
     local arrows = self.arrows
     pool:Begin()
     arrows:Begin()
+    self.dots:Begin()
     local db = GP.db
     local map = self:GetMap()
     local shownMap = map and map:GetMapID()
@@ -1607,19 +1692,17 @@ function Pin:Draw()
                 local ox, oy, sx, sy, own = Placement(route.mapID, shownMap)
                 if ox then
                     -- thinner on a bigger map, where the route is small
-                    local width = (own and db.worldWidth or max(1, db.worldWidth * 0.5)) / scale
+                    local width = (own and db.worldWidth or max(0.5, db.worldWidth * 0.5)) / scale
                     local color = GP:LineColor(route, "world")
                     local xs, ys = {}, {}
                     for i = 1, n do
                         xs[i], ys[i] = (ox + p[2 * i - 1] * sx) * w, -(oy + p[2 * i] * sy) * h
                     end
+                    local carry = 0
                     for i = 1, n do
                         local j = i % n + 1
                         if not (n == 2 and i == 2) then
-                            local line = pool:Get()
-                            Paint(line, color, alpha, width)
-                            line:SetStartPoint("TOPLEFT", self, xs[i], ys[i])
-                            line:SetEndPoint("TOPLEFT", self, xs[j], ys[j])
+                            carry = Stroke(pool, self.dots, self, "TOPLEFT", xs[i], ys[i], xs[j], ys[j], color, alpha, width, db.worldStyle, carry, 1 / scale)
                         end
                     end
                     if db.arrows then
@@ -1634,6 +1717,7 @@ function Pin:Draw()
     end
     pool:Done()
     arrows:Done()
+    self.dots:Done()
 end
 
 local Provider = CreateFromMixins and MapCanvasDataProviderMixin and CreateFromMixins(MapCanvasDataProviderMixin) or {}
@@ -1653,6 +1737,7 @@ function Provider:RemoveAllData()
     if self.pin and self.pin.pool then
         self.pin.pool:Begin()
         self.pin.pool:Done()
+        if self.pin.dots then self.pin.dots:Begin(); self.pin.dots:Done() end
         self.pin.arrows:Begin()
         self.pin.arrows:Done()
         self.pin.taboo:Begin()
@@ -1866,6 +1951,7 @@ function GP:SetupMinimap()
     f:SetAllPoints(Minimap)
     f:SetFrameLevel(Minimap:GetFrameLevel() + 1)
     f.pool = LinePool(f, "ARTWORK")
+    f.dots = DotPool(f, "ARTWORK")
     f.ring = LinePool(f, "ARTWORK")
     f.arrows = LinePool(f, "ARTWORK")
     f.join = LinePool(f, "ARTWORK")
@@ -1932,6 +2018,7 @@ function GP:DrawMinimap(force)
     if not (db and db.minimap) then
         if f.drew then
             pool:Begin(); pool:Done()
+            f.dots:Begin(); f.dots:Done()
             f.arrows:Begin(); f.arrows:Done()
             f.join:Begin(); f.join:Done()
             f.drew = false; f.last = nil
@@ -1945,8 +2032,9 @@ function GP:DrawMinimap(force)
 
     -- your place on each map that has a route showing
     local mc = db.minimapColor
-    local maps, key = {}, L["%.1f:%.3f:%.1f:%d:%d:%s:%.3f:%.3f:%.3f:%s:%s"]:format(radius, facing, half, db.minimapWidth,
+    local maps, key = {}, L["%.1f:%.3f:%.1f:%.1f:%d:%s:%.3f:%.3f:%.3f:%s:%s"]:format(radius, facing, half, db.minimapWidth,
         db.minimapAlpha, tostring(db.minimapRouteColor), mc[1], mc[2], mc[3], tostring(db.arrows), tostring(db.arrowsReverse)) .. ":" .. tostring(db.joinLine)
+        .. ":" .. tostring(db.minimapStyle)
     for _, route in ipairs(db.routes) do
         if route.shown and not route.working and maps[route.mapID] == nil then
             local x, y = PlayerPos(route.mapID)
@@ -1968,6 +2056,7 @@ function GP:DrawMinimap(force)
     local join   -- the nearest point of any route: { x, y, distance, color }
     pool:Begin()
     arrows:Begin()
+    f.dots:Begin()
     for _, route in ipairs(db.routes) do
         local at = maps[route.mapID]
         local p, n = self:DrawPoints(route)
@@ -1982,15 +2071,13 @@ function GP:DrawMinimap(force)
                 if rotate then dx, dy = dx * c - dy * s, dx * s + dy * c end
                 sx[i], sy[i] = dx, -dy
             end
+            local carry = 0
             for i = 1, n do
                 local j = i % n + 1
                 if not (n == 2 and i == 2) then
                     local ax, ay, bx, by = clip(sx[i], sy[i], sx[j], sy[j], inside)
                     if ax then
-                        local line = pool:Get()
-                        Paint(line, color, alpha, db.minimapWidth)
-                        line:SetStartPoint("CENTER", f, ax, ay)
-                        line:SetEndPoint("CENTER", f, bx, by)
+                        carry = Stroke(pool, f.dots, f, "CENTER", ax, ay, bx, by, color, alpha, db.minimapWidth, db.minimapStyle, carry)
                     end
                 end
             end
@@ -2012,6 +2099,7 @@ function GP:DrawMinimap(force)
     end
     pool:Done()
     arrows:Done()
+    f.dots:Done()
     f.join:Begin()
     -- off the route: dashes from you toward it, up to the minimap's edge
     if join and join[3] > self.JOIN_MIN * pxPerYard then

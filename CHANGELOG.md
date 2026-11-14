@@ -1,5 +1,13 @@
 # Gatherline
 
+## v1.7.0
+
+- **Line width in halves:** world map and minimap line widths now go in steps of 0.5,
+  from 0.5 up – for really fine lines.
+- **Line style:** routes can be drawn as a solid line, dashes or dots, set apart for the
+  world map and the minimap (*Map & lines → Style*). Dots and dashes run on evenly round
+  the corners; the width sets how thick the dashes and how big the dots are.
+
 ## v1.6.1
 
 - The compass band no longer lies on top of Shortest Path Forever's own compass: while

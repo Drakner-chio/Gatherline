@@ -452,5 +452,13 @@ ns.TRANSLATIONS.deDE = {
     ["lap card"] = "Rundenkarte",
     ["HUD off. |cffffd100/gl hud|r switches it on again."] = "HUD aus. |cffffd100/gl hud|r schaltet es wieder an.",
     ["HUD: %s. |cffffd100/gl hud compass|lens|card|r switches a part."] = "HUD: %s. |cffffd100/gl hud compass|lens|card|r schaltet ein Teil.",
+    -- Linienstil (1.7.0)
+    ["."] = ",",
+    ["Style"] = "Stil",
+    ["Solid line"] = "Linie",
+    ["Dashes"] = "Striche",
+    ["Dots"] = "Punkte",
+    ["How routes are drawn on the world map: a solid line, dashes or dots. The width above sets how thick (dots: how big)."] = "Wie Routen auf der Weltkarte gezeichnet werden: als Linie, Striche oder Punkte. Die Breite darüber bestimmt, wie dick (bei Punkten: wie groß).",
+    ["How routes are drawn on the minimap: a solid line, dashes or dots. The width above sets how thick (dots: how big)."] = "Wie Routen auf der Minimap gezeichnet werden: als Linie, Striche oder Punkte. Die Breite darüber bestimmt, wie dick (bei Punkten: wie groß).",
 }
 ns.UseTranslations()

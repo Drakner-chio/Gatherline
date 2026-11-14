@@ -2067,6 +2067,52 @@ do
     GP:OpenConfig("routes")
 end
 
+STEP("line styles and half widths")
+do
+    local f = CreateFrame("Frame")
+    local lines, dots = GP.LinePool(f), GP.DotPool(f)
+    local function Count(pool, key)
+        local n = 0
+        for _, o in ipairs(pool[key]) do if o:IsShown() then n = n + 1 end end
+        return n
+    end
+    local red = { 1, 0, 0 }
+    lines:Begin(); dots:Begin()
+    local carry = GP.Stroke(lines, dots, f, "CENTER", 0, 0, 100, 0, red, 1, 2, "line", 0)
+    lines:Done(); dots:Done()
+    check(Count(lines, "lines") == 1 and Count(dots, "dots") == 0 and carry == 0, "a line: one line")
+    lines:Begin(); dots:Begin()
+    carry = GP.Stroke(lines, dots, f, "CENTER", 0, 0, 100, 0, red, 1, 2, "dots", 0)
+    lines:Done(); dots:Done()
+    -- 2 wide: dots 5.2 apart (min 5), from 0 to 100: 20 of them
+    check(Count(dots, "dots") == 20 and Count(lines, "lines") == 0, "dots along it: " .. Count(dots, "dots"))
+    check(near(dots.dots[1].__w, 3.6, 1e-9), "each dot 1.8 widths across")
+    -- the pattern runs on round a corner
+    lines:Begin(); dots:Begin()
+    local c1 = GP.Stroke(lines, dots, f, "CENTER", 0, 0, 7, 0, red, 1, 2, "dots", 0)
+    GP.Stroke(lines, dots, f, "CENTER", 7, 0, 7, 10, red, 1, 2, "dots", c1)
+    lines:Done(); dots:Done()
+    check(Count(dots, "dots") == 4, "even round corners (0, 5.2, 10.4, 15.6 along it): " .. Count(dots, "dots"))
+    lines:Begin(); dots:Begin()
+    GP.Stroke(lines, dots, f, "CENTER", 0, 0, 100, 0, red, 1, 2, "dashes", 0)
+    lines:Done(); dots:Done()
+    -- 2 wide: dashes 6 long, gaps 4: 10 of them
+    check(Count(lines, "lines") == 10 and Count(dots, "dots") == 0, "dashes: " .. Count(lines, "lines"))
+    -- the page: half widths and the style
+    GP:OpenConfig("display")
+    ui.worldWidth:SetValue(1.5)
+    check(GP.db.worldWidth == 1.5, "world line width 1.5")
+    ui.minimapWidth:SetValue(0.5)
+    check(GP.db.minimapWidth == 0.5, "minimap 0.5")
+    ui.minimapStyle.Choose("dots")
+    check(GP.db.minimapStyle == "dots", "minimap in dots")
+    GP:DrawMinimap(true)
+    ui.worldStyle.Choose("dashes")
+    check(GP.db.worldStyle == "dashes", "world map in dashes")
+    GP.db.worldStyle, GP.db.minimapStyle, GP.db.worldWidth, GP.db.minimapWidth = "line", "line", 4, 3
+    GP:OpenConfig("routes")
+end
+
 STEP("without GatherMate2")
 GatherMate2 = nil
 check(not GP:HasGatherMate())

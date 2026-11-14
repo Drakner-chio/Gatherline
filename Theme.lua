@@ -327,6 +327,7 @@ function T.Slider(parent, text, x, y, width, get, set, min, max, suffix, step, f
     suffix, step, fmt = suffix or "", step or 1, fmt or "%d"
     local function show(v)
         if zeroText and v == 0 then return L[zeroText] end
+        if type(fmt) == "function" then return fmt(v) .. L[suffix] end
         return fmt:format(v) .. L[suffix]
     end
     local title = Text(parent, text, "GameFontHighlight")

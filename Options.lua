@@ -179,24 +179,29 @@ local function BuildRoutes(p)
             T.Tooltip(b, title, tip)
             return b
         end
-        r.delete = Action("Interface\\Buttons\\UI-StopButton", "Delete", "Delete this route.", function(route)
+        r.delete = Action("delete", "Delete", "Delete this route.", function(route)
             GP:Confirm(L["Delete the route |cff3fd0a0%s|r?"]:format(route.name), L["Delete"],
                 function() GP:DeleteRoute(route) end)
         end)
         r.delete:SetPoint("TOPRIGHT", -10, -10)
-        r.rebuild = Action("Interface\\Buttons\\UI-RefreshButton", "Rebuild",
+        r.rebuild = Action("rebuild", "Rebuild",
             "Reads this route's nodes again (GatherMate2 or GatherLite may know more by now) and finds the shortest loop again.",
             function(route) GP:RebuildRoute(route) end)
         r.rebuild:SetPoint("RIGHT", r.delete, "LEFT", -4, 0)
-        r.edit = Action("Interface\\Buttons\\UI-GuildButton-PublicNote-Up", "Edit",
+        r.edit = Action("edit", "Edit",
             "Change this route's zone, nodes, name and pass distance, then find its loop again.",
             function(route) GP:EditRouteInWindow(route) end)
         r.edit:SetPoint("RIGHT", r.rebuild, "LEFT", -4, 0)
-        r.turn = Action("Interface\\Buttons\\UI-RotationRight-Button-Up", "Turn round",
-            "Ride this loop the other way round. The arrows turn with it, and a ride on it carries on the new way.",
-            function(route) GP:ReverseRoute(route) end)
+        -- which way the loop is ridden, shown by its icon; a click turns it round
+        r.turn = Action("cw", "Direction", "", function(route) GP:ReverseRoute(route) end)
+        T.Tooltip(r.turn, function() return L["Direction"] end, function()
+            local cw = r.route and GP:RouteClockwise(r.route)
+            if cw == nil then return L["Ride this loop the other way round."] end
+            return (cw and L["Ridden clockwise. Click to ride it anticlockwise: the arrows turn with it, and a ride on it carries on the new way."]
+                or L["Ridden anticlockwise. Click to ride it clockwise: the arrows turn with it, and a ride on it carries on the new way."])
+        end)
         r.turn:SetPoint("RIGHT", r.edit, "LEFT", -4, 0)
-        r.share = Action("Interface\\Icons\\INV_Letter_15", "Share",
+        r.share = Action("share", "Share",
             "A line of text with this route in it, to send to a friend: they click Import and get exactly this loop.",
             function(route) GP:ShareWindow(route) end)
         r.share:SetPoint("RIGHT", r.turn, "LEFT", -4, 0)
@@ -283,6 +288,7 @@ local function BuildRoutes(p)
             r.ride:SetText(riding and L["Stop"] or L["Start"])
             r.ride:SetDisabled(not riding and (route.working or GP:NodeCount(route) < 2 or not GP:CanNavigate()))
             r.turn:SetDisabled(route.working or GP:NodeCount(route) < 2)
+            r.turn.icon:SetTexture(T.ICONS[GP:RouteClockwise(route) == false and "ccw" or "cw"])
             r.share:SetDisabled(route.working or GP:NodeCount(route) < 2)
             if riding and not route.working then
                 local first, rest = r.info:GetText():match("^([^\n]*)\n[^\n]*(.*)$")
@@ -971,12 +977,12 @@ local function BuildTours(p)
             T.Tooltip(b, title, tip)
             return b
         end
-        r.delete = Action("Interface\\Buttons\\UI-StopButton", "Delete", "Delete this tour (its routes stay).", function(tour)
+        r.delete = Action("delete", "Delete", "Delete this tour (its routes stay).", function(tour)
             GP:Confirm(L["Delete the tour |cff3fd0a0%s|r? Its routes stay."]:format(tour.name), L["Delete"],
                 function() GP:DeleteTour(tour) end)
         end)
         r.delete:SetPoint("TOPRIGHT", -10, -10)
-        r.edit = Action("Interface\\Buttons\\UI-GuildButton-PublicNote-Up", "Edit",
+        r.edit = Action("edit", "Edit",
             "Change this tour's routes, their order and laps.", function(tour) NewDraft(tour) end)
         r.edit:SetPoint("RIGHT", r.delete, "LEFT", -4, 0)
         r.ride = FlatButton(r, "Start", 72, 24)
@@ -1043,7 +1049,7 @@ local function BuildTours(p)
             T.Tooltip(b, title)
             return b
         end
-        r.remove = Btn("Interface\\Buttons\\UI-StopButton", "Take out", function()
+        r.remove = Btn("delete", "Take out", function()
             table.remove(tourDraft.stages, i); GP:RefreshConfig()
         end)
         r.remove:SetPoint("RIGHT", 0, 0)
@@ -1302,9 +1308,7 @@ local function BuildRiding(p)
     local card4 = Card(p, "On the map while you ride", 0, -220, PAGE_W, 90)
     refs.arrowsSwitch = Setting(card4, "Show arrows", 12, -30, "arrows",
         "Small arrows along every route's line, on the world map and the minimap, showing which way round to ride the loop.")
-    refs.arrowsReverse = Setting(card4, "Reverse direction", COL2, -30, "arrowsReverse",
-        "Turn the arrows round, to ride every loop the other way.")
-    AddRefresher(function() refs.arrowsReverse:SetAlpha(GP.db.arrows and 1 or 0.4) end)
+    T.Note(card4, "Which way each route is ridden: the round arrow on its card (clockwise or anticlockwise); click it to turn the route round.", COL2, -30, PAGE_W - COL2 - 12)
     refs.joinSwitch = Setting(card4, "Line to the route", 12, -60, "joinLine",
         "A dashed line on the minimap from you to the nearest point of a route showing in your zone, so you know where to join it. Gone once you're on the route.")
 

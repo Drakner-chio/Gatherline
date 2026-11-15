@@ -104,6 +104,7 @@ function Methods:ClearFocus()
 end
 function Methods:GetCenter() return 500, 400 end
 function Methods:SetScale(v) self.__scale = v end
+function Methods:SetTexture(t) self.__texture = t end
 function Methods:SetFont(_, size) self.__fontSize = size end
 
 function CreateFrame(kind, name, parent) return newObj(kind, name, parent) end

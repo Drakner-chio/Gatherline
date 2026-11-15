@@ -1,5 +1,17 @@
 # Gatherline
 
+## v1.7.2
+
+- **Fixed: "PathGrid.lua:60: attempt to perform arithmetic on field '?'"** after updating
+  Shortest Path Forever to 1.37. It now stores its walking maps in a new format (3); Gatherline's
+  copy of the walking search is updated to read it. Should Shortest Path Forever change the format
+  again, Gatherline draws straight lines until it catches up instead of throwing errors.
+- **Each route shows which way it is ridden:** the round arrow on its card is clockwise or
+  anticlockwise, and a click turns the route round. The global *Reverse direction* switch is gone –
+  if you had it on, your routes were turned round once so you ride them as before.
+- **New icons** on the route and tour cards (share, direction, edit, rebuild, delete), in
+  Gatherline's own look.
+
 ## v1.7.1
 
 - **Each HUD part its own look:** compass band, ground lens and lap card each keep their

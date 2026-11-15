@@ -883,7 +883,7 @@ check(#GP.ArrowMarks({ 0, 100 }, { 0, 0 }, 2, 10) == 0, "there and back (two sto
 check(#GP.ArrowMarks({ 0, 0, 0 }, { 0, 0, 0 }, 3, 10) == 0, "stops on top of each other: no arrows")
 
 check(GP.db.arrows == true and GP.db.arrowsReverse == false, "on to start, not reversed")
-check(ui.arrowsSwitch and ui.arrowsReverse, "two switches on Display")
+check(ui.arrowsSwitch and rawget(ui, "arrowsReverse") == nil, "arrows on Guidance; direction is per route now")
 local herbPoints = herbs.points
 herbs.points = { 0.4, 0.4, 0.6, 0.4, 0.6, 0.7, 0.4, 0.7 }
 local wasShown = {}
@@ -899,12 +899,13 @@ check(near(wa[1].__from[1], 440 - 6, 0.01) and near(math.abs(wa[1].__from[2] + 2
 check(wa[1].__to[1] == wa[2].__to[1] and wa[1].__to[2] == wa[2].__to[2], "two lines meeting at the tip")
 check(wa[1].__color[1] == herbs.color[1] and near(wa[1].__color[4], 0.85) and wa[1].__thickness == 4,
     "in the line's color, opacity and width")
-Click(ui.arrowsReverse)
-check(GP.db.arrowsReverse == true)
+GP.db.arrowsReverse = true
+GP:Changed()
 wa = Shown(pin.arrows)
 -- reversed, the first leg runs from the first stop down the west edge
 check(#wa == 20 and near(wa[1].__to[1], 400, 0.01) and wa[1].__to[2] < wa[1].__from[2], "reversed: pointing down (south)")
-Click(ui.arrowsReverse)
+GP.db.arrowsReverse = false
+GP:Changed()
 
 -- minimap: a square 50 yards round you, 23.3 pixels each way
 local a, b = 50 / 1600, 50 / 1066
@@ -2121,6 +2122,43 @@ do
     ui.worldStyle.Choose("dashes")
     check(GP.db.worldStyle == "dashes", "world map in dashes")
     GP.db.worldStyle, GP.db.minimapStyle, GP.db.worldWidth, GP.db.minimapWidth = "line", "line", 4, 3
+    GP:OpenConfig("routes")
+end
+
+STEP("each route's own direction")
+do
+    -- on the map, y grows southward: east, south, west, north is clockwise
+    local r = { points = { 0.4, 0.4, 0.6, 0.4, 0.6, 0.6, 0.4, 0.6 } }
+    check(GP:RouteClockwise(r) == true, "clockwise")
+    r.points = GP.ReversePairs(r.points)
+    check(GP:RouteClockwise(r) == false, "turned round: anticlockwise")
+    check(GP:RouteClockwise({ points = { 0.1, 0.1, 0.2, 0.2 } }) == nil, "two stops: no direction")
+    -- the card's icon shows it, a click turns it round
+    local route
+    for _, rr in ipairs(GP.db.routes) do if not rr.working and GP:NodeCount(rr) >= 3 then route = rr break end end
+    GP:OpenConfig("routes")
+    ui.routesZone.Choose(route.mapID)
+    GP:RefreshConfig()
+    local k
+    for i, row in ipairs(ui.routeRows) do if row.route == route then k = i end end
+    local was = GP:RouteClockwise(route)
+    local icon = ui.turnButtons[k].icon
+    check(icon.__texture:find(was and "cw$" or "ccw$"), "icon shows " .. (was and "clockwise" or "anticlockwise"))
+    Click(ui.turnButtons[k])
+    check(GP:RouteClockwise(route) == not was and icon.__texture:find(was and "ccw$" or "cw$"), "clicked: turned round, icon too")
+    Click(ui.turnButtons[k])
+    -- the old global "Reverse direction" turns every route round once, then is gone
+    local before = { unpack(route.points) }
+    GP.db.arrowsReverse = true
+    GP:LoadSettings()
+    check(GP.db.arrowsReverse == false, "switch gone")
+    local same = true
+    for i = 1, #before, 2 do
+        local j = #before - i
+        same = same and route.points[i] == before[j] and route.points[i + 1] == before[j + 1]
+    end
+    check(same, "and the route is ridden the way it was")
+    GP:ReverseRoute(route)
     GP:OpenConfig("routes")
 end
 

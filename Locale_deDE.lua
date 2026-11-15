@@ -467,5 +467,11 @@ ns.TRANSLATIONS.deDE = {
     ["How big the part is, all of it. While Move the parts is on, the mouse wheel over a part does the same."] = "Wie groß das ganze Teil ist. Solange „Teile verschieben“ an ist, geht das auch mit dem Mausrad über dem Teil.",
     ["How big the part's writing is, on top of its size."] = "Wie groß die Schrift im Teil ist, zusätzlich zur Größe.",
     ["How see-through the part is."] = "Wie durchsichtig das Teil ist.",
+    -- Richtung je Route (1.7.2)
+    ["Direction"] = "Richtung",
+    ["Ride this loop the other way round."] = "Diese Runde andersherum reiten.",
+    ["Ridden clockwise. Click to ride it anticlockwise: the arrows turn with it, and a ride on it carries on the new way."] = "Wird im Uhrzeigersinn geritten. Klicken, um sie gegen den Uhrzeigersinn zu reiten: Die Pfeile drehen sich mit, und eine laufende Runde geht in der neuen Richtung weiter.",
+    ["Ridden anticlockwise. Click to ride it clockwise: the arrows turn with it, and a ride on it carries on the new way."] = "Wird gegen den Uhrzeigersinn geritten. Klicken, um sie im Uhrzeigersinn zu reiten: Die Pfeile drehen sich mit, und eine laufende Runde geht in der neuen Richtung weiter.",
+    ["Which way each route is ridden: the round arrow on its card (clockwise or anticlockwise); click it to turn the route round."] = "In welche Richtung jede Route geritten wird, zeigt der runde Pfeil auf ihrer Karte (im oder gegen den Uhrzeigersinn). Ein Klick darauf dreht die Route um.",
 }
 ns.UseTranslations()

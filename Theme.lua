@@ -136,14 +136,32 @@ local function FlatButton(parent, text, width, height)
     return b
 end
 
--- A small square button with a game icon in it (Edit, Rebuild, Delete...)
+-- Gatherline's own line icons (media/icons, made by tools/make_icons.py): white,
+-- tinted here, jade on hover, dim when it can't be used
+T.ICONS = {}
+for _, name in ipairs({ "share", "reverse", "edit", "rebuild", "delete", "cw", "ccw" }) do
+    T.ICONS[name] = "Interface\\AddOns\\Gatherline\\media\\icons\\" .. name
+end
+
+-- A small square button with an icon in it (Edit, Rebuild, Delete...): one of
+-- T.ICONS by name, or a game texture
 function T.IconButton(parent, texture, size)
     local b = FlatButton(parent, "", size or 24, size or 24)
     local icon = b:CreateTexture(nil, "OVERLAY")
-    icon:SetSize((size or 24) - 10, (size or 24) - 10)
+    local own = T.ICONS[texture]
+    icon:SetSize((size or 24) - (own and 8 or 10), (size or 24) - (own and 8 or 10))
     icon:SetPoint("CENTER")
-    icon:SetTexture(texture)
+    icon:SetTexture(own or texture)
     b.icon = icon
+    if own then
+        local restyle = b.Restyle
+        function b:Restyle()
+            restyle(self)
+            local c = self.disabled and C.muted or (self.hover and C.accent or C.text)
+            icon:SetVertexColor(c[1], c[2], c[3], self.disabled and 0.5 or 1)
+        end
+        b:Restyle()
+    end
     return b
 end
 
@@ -153,8 +171,11 @@ function T.Tooltip(widget, title, body)
     widget:SetScript("OnEnter", function(self)
         if self.SetHover then self:SetHover(true) end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        if title then GameTooltip:AddLine(L[title], C.accent[1], C.accent[2], C.accent[3]) end
-        if body then GameTooltip:AddLine(L[body], 1, 1, 1, true) end
+        -- a function: worked out each time (already translated)
+        local t = type(title) == "function" and title(self) or (title and L[title])
+        local b = type(body) == "function" and body(self) or (body and L[body])
+        if t then GameTooltip:AddLine(t, C.accent[1], C.accent[2], C.accent[3]) end
+        if b then GameTooltip:AddLine(b, 1, 1, 1, true) end
         GameTooltip:Show()
     end)
     widget:SetScript("OnLeave", function(self)

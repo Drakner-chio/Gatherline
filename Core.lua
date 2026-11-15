@@ -113,6 +113,17 @@ function GP:LoadSettings()
         if db.minimapAlpha == nil then db.minimapAlpha = db.alpha end
     end
     db.alpha = nil
+    -- (before 1.7.2 "Reverse direction" turned every route's arrows and rides round;
+    -- now each route has its own direction: turn them round once, for good)
+    if db.arrowsReverse == true and type(db.routes) == "table" then
+        for _, r in ipairs(db.routes) do
+            if type(r) == "table" and type(r.points) == "table" then
+                r.points = GP.ReversePairs(r.points)
+                if type(r.drawn) == "table" then r.drawn = GP.ReversePairs(r.drawn) end
+            end
+        end
+        db.arrowsReverse = false
+    end
     for _, k in ipairs({ "worldStyle", "minimapStyle" }) do
         local ok = false
         for _, s in ipairs(self.LINE_STYLES) do ok = ok or db[k] == s end
@@ -1204,6 +1215,22 @@ local function ReversePairs(list)
     return out
 end
 GP.ReversePairs = ReversePairs
+
+-- Which way a route is ridden on the map: true clockwise, false anticlockwise
+-- (nil for fewer than three stops). Map y grows southward, so a positive
+-- shoelace sum is clockwise as you see it.
+function GP:RouteClockwise(route)
+    local p = route and route.points
+    local n = p and floor(#p / 2) or 0
+    if n < 3 then return nil end
+    local sum = 0
+    for i = 1, n do
+        local j = i % n + 1
+        sum = sum + p[2 * i - 1] * p[2 * j] - p[2 * j - 1] * p[2 * i]
+    end
+    if self.db and self.db.arrowsReverse then sum = -sum end
+    return sum > 0
+end
 
 function GP:ReverseRoute(route)
     if not route or route.working or self:NodeCount(route) < 2 then return false end

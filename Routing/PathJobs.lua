@@ -1,4 +1,4 @@
--- Copied unchanged from Shortest Path Forever (cjber, GPL-3.0-or-later), Routing/PathJobs.lua,
+-- Copied unchanged from Shortest Path Forever (cjber, GPL-3.0-or-later), Routing/PathJobs.lua (commit bc9eaa9),
 -- https://github.com/cjber/shortest-path-forever. Gatherline uses its own copy, under its own
 -- namespace, reading the walking maps Shortest Path Forever loads (ShortestPathForeverPathData).
 ---@class SPFNamespace

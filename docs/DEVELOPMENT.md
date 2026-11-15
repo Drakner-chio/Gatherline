@@ -124,3 +124,16 @@ Gathering routes for **World of Warcraft: Forever** (interface 16001): the short
 - 0.4.0 (Baustein 3): `route.drawn` = the loop along the ground, flat map positions, stops included in order with each leg's inside between (`TraceLines` in Core.lua, at the end of `Build` when `route.walked`: `Walk.Line` per leg, `WALK_PARALLEL` x 2 at a time, `route.walkTrace/walkTraceOf` for the Routes row; points within `TRACE_KEEP` 1.5 yards of the line between their neighbours dropped; a leg that can't be traced is straight; nil if none could). `GP:DrawPoints(route)` gives `drawn` or `points`; the world map pin and the minimap draw (lines, arrows, line to the route) use it. `route.points` stays the stops: navigation, lengths, `AddNode`/`RemoveNode` work on them; those two set `drawn` = nil. `LoadSettings` drops a broken `drawn` and clears the working fields. Fixed `Walk.MapPos`: `C_Map.GetMapPosFromWorldPos` returns (uiMapID, position).
 - 0.4.1: `GP:ReverseRoute(route)` reverses `points` and `drawn` (`GP.ReversePairs`), restarts a ride on it (`StopNav(true)`, `StartNav`). Routes row: name box 136, a 24 x 20 button with `UI-RefreshButton` after Start (`refs.turnButtons`). `/gl reverse`.
 - 0.5.0: Riding tab (`BuildRiding`, 5th sidebar tab): `db.navReach` (15-150, 30; `CatchUp` moves on when within it of the stop you head for, later stops within max(navReach, NAV_CATCH)), `db.navAhead` (2-25, 10; `GP.NAV_AHEAD` overrides it when set, for tests), `db.navLaps`, `db.navLabel` ("number"|"nodes"|"both", checked in LoadSettings). `GP:StopLabels(route)`: each node of the route's kinds (not skipped, not in a taboo area) counts for its nearest stop within sight + 40 yards; "Name ×k" by count, `NAV_LABEL_NAMES` (3) names then "+N". Worked out once at `StartNav` (`nav.labels`, by route stop index). `GP:StopTitle(k, n, what)`; k counts from the joining stop. In "number" style the nodes go in the stop's tooltip. Tick every 0.25 s.
+
+## Keeping the walking search in step with Shortest Path Forever
+
+`Routing/` is a copy of Shortest Path Forever's `Routing/PathGrid.lua`, `Path.lua` and `PathJobs.lua`
+(the commit is in each file's first line). Gatherline reads Shortest Path Forever's walking maps
+(`ShortestPathForeverPathData`), so when Shortest Path Forever changes the maps' format the copy must
+follow: copy the three files from its latest `main`, keep the header, and in `PathGrid.lua` put back
+Gatherline's `Data()` (own decode caches, and `MAX_FORMAT`: a map newer than that counts as missing, so
+routes fall back to straight lines instead of erroring). Raise `MAX_FORMAT` to the newest format the
+copied decoder reads. Then run `tests/walk_spec.lua` and `tests/shared_data_spec.lua` against the new
+Shortest Path Forever.
+
+Icons: `media/icons/*.tga` are made by `python3 tools/make_icons.py` (needs Pillow).

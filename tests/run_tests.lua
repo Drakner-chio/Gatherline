@@ -2164,6 +2164,21 @@ do
     GP:OpenConfig("routes")
 end
 
+STEP("walking maps it can't read")
+do
+    local W = GP.Walk
+    local errs = 0
+    local was = geterrorhandler
+    geterrorhandler = function() return function() errs = errs + 1 end end
+    ns.OnWalkError("PathGrid.lua:60: attempt to perform arithmetic on field '?'")
+    ns.OnWalkError("again")
+    check(W.broken and errs == 0 and logHas("can't read Shortest Path Forever's walking maps"), "said once, no error windows")
+    local ok = W.Ready(E)
+    check(not ok, "walks off for the session: straight lines")
+    W.broken = nil
+    geterrorhandler = was
+end
+
 STEP("without GatherMate2")
 GatherMate2 = nil
 check(not GP:HasGatherMate())

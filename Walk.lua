@@ -43,7 +43,20 @@ function Walk.MapPos(mapID, point)
 end
 
 -- Whether walks can be worked out on this zone's continent now
+-- A walking search that errors (Shortest Path Forever's walking maps in a shape
+-- this copy can't read) switches walks off for the session, said once in chat;
+-- routes then use straight lines.
+Walk.broken = nil
+ns.OnWalkError = function(err)
+    if not Walk.broken then
+        Walk.broken = tostring(err)
+        GP.Print(L["can't read Shortest Path Forever's walking maps (is Gatherline up to date?). Routes use straight lines until /reload."])
+        if GP.DEBUG then geterrorhandler()(err) end
+    end
+end
+
 function Walk.Ready(mapID)
+    if Walk.broken then return false, "Shortest Path Forever's walking maps can't be read" end
     if not (Path and ShortestPathForeverPathData) then return false, "Shortest Path Forever isn't loaded" end
     local p = Walk.Point(mapID, 0.5, 0.5)
     if not p then return false, "the game can't place this zone" end

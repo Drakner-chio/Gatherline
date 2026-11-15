@@ -1,4 +1,4 @@
--- Copied unchanged from Shortest Path Forever (cjber, GPL-3.0-or-later), Routing/PathJobs.lua (commit bc9eaa9),
+-- Copied (one change: ns.OnWalkError, marked "Gatherline:") from Shortest Path Forever (cjber, GPL-3.0-or-later), Routing/PathJobs.lua (commit bc9eaa9),
 -- https://github.com/cjber/shortest-path-forever. Gatherline uses its own copy, under its own
 -- namespace, reading the walking maps Shortest Path Forever loads (ShortestPathForeverPathData).
 ---@class SPFNamespace
@@ -77,7 +77,9 @@ pump = function()
 			end
 			job.done, job.scratch, job.co = true, nil, nil
 			if not ok then
-				geterrorhandler()(points)
+				-- Gatherline: its own handler, so a walking map it can't read stops walks once instead of an error a job
+				local onError = ns.OnWalkError or geterrorhandler()
+				onError(points)
 				points, cost = nil, "error"
 			end
 			-- A pause drops the queued answer; a batch's costs are already on the job, and this keeps why.

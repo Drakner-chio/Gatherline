@@ -473,5 +473,7 @@ ns.TRANSLATIONS.deDE = {
     ["Ridden clockwise. Click to ride it anticlockwise: the arrows turn with it, and a ride on it carries on the new way."] = "Wird im Uhrzeigersinn geritten. Klicken, um sie gegen den Uhrzeigersinn zu reiten: Die Pfeile drehen sich mit, und eine laufende Runde geht in der neuen Richtung weiter.",
     ["Ridden anticlockwise. Click to ride it clockwise: the arrows turn with it, and a ride on it carries on the new way."] = "Wird gegen den Uhrzeigersinn geritten. Klicken, um sie im Uhrzeigersinn zu reiten: Die Pfeile drehen sich mit, und eine laufende Runde geht in der neuen Richtung weiter.",
     ["Which way each route is ridden: the round arrow on its card (clockwise or anticlockwise); click it to turn the route round."] = "In welche Richtung jede Route geritten wird, zeigt der runde Pfeil auf ihrer Karte (im oder gegen den Uhrzeigersinn). Ein Klick darauf dreht die Route um.",
+    ["can't read Shortest Path Forever's walking maps (is Gatherline up to date?). Routes use straight lines until /reload."] = "kann die Laufkarten von Shortest Path Forever nicht lesen (ist Gatherline aktuell?). Bis zum /reload nutzen Routen gerade Linien.",
+    ["Shortest Path Forever's walking maps can't be read"] = "Die Laufkarten von Shortest Path Forever lassen sich nicht lesen",
 }
 ns.UseTranslations()

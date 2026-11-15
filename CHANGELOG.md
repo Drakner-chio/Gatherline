@@ -1,5 +1,11 @@
 # Gatherline
 
+## v1.7.4
+
+- If Gatherline ever can't read Shortest Path Forever's walking maps (Shortest Path Forever
+  updated ahead of it), it now says so once in chat and uses straight lines until `/reload`,
+  instead of a stream of Lua errors.
+
 ## v1.7.3
 
 - Switching *Move the parts* off now ends the HUD preview it started too.

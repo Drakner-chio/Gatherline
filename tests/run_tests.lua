@@ -2041,9 +2041,11 @@ do
     Click(ui.hudReset)
     check(next(hs.pos) == nil and hs.parts.card.scale == 100 and hs.parts.compass.scale == 100, "and all goes back")
     Click(ui.hudMove)
-    check(hs.locked, "fixed again")
+    check(hs.locked and not GP.hudPreview, "fixed again, and the preview ends with it")
     Click(ui.hudPreview)
-    check(not GP.hudPreview, "preview ended")
+    check(GP.hudPreview, "preview on its own")
+    Click(ui.hudPreview)
+    check(not GP.hudPreview, "and off")
     -- /gl hud
     SlashCmdList.GATHERLINE("hud")
     check(not hs.compass and not hs.lens and not hs.card and logHas("HUD off"), "/gl hud: all off")

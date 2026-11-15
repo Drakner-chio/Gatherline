@@ -1232,7 +1232,8 @@ local function BuildHud(p)
     refs.hudMove:SetScript("OnClick", function(self)
         local h = GP:HudSettings()
         h.locked = self:IsOn()
-        if not h.locked and not GP.hudPreview then GP:SetHudPreview(true) end
+        -- moving shows the preview; done moving ends it
+        GP:SetHudPreview(not h.locked)
         GP:UpdateHud(true)
         GP:RefreshConfig()
     end)

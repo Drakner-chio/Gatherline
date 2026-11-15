@@ -1,5 +1,9 @@
 # Gatherline
 
+## v1.7.3
+
+- Switching *Move the parts* off now ends the HUD preview it started too.
+
 ## v1.7.2
 
 - **Fixed: "PathGrid.lua:60: attempt to perform arithmetic on field '?'"** after updating

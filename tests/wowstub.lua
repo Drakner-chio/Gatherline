@@ -105,6 +105,8 @@ end
 function Methods:GetCenter() return 500, 400 end
 function Methods:SetScale(v) self.__scale = v end
 function Methods:SetTexture(t) self.__texture = t end
+function Methods:SetAttribute(k, v) self.__attr = self.__attr or {}; self.__attr[k] = v end
+function Methods:GetAttribute(k) return self.__attr and self.__attr[k] end
 function Methods:SetFont(_, size) self.__fontSize = size end
 
 function CreateFrame(kind, name, parent) return newObj(kind, name, parent) end
@@ -293,7 +295,7 @@ end
 -- Loads the addon's files in .toc order
 function LoadAddon(dir)
     local ns = {}
-    for _, f in ipairs({ "Locale.lua", "Locale_deDE.lua", "Theme.lua", "Optimize.lua", "Core.lua", "Sources.lua", "Session.lua", "Share.lua", "Sync.lua", "Skills_Data.lua", "Skills.lua", "Tours.lua", "Hud.lua", "Hazards_Data.lua", "NoGo.lua", "Routing/PathGrid.lua", "Routing/Path.lua", "Routing/PathJobs.lua", "Walk.lua", "Navigation.lua", "Options.lua" }) do
+    for _, f in ipairs({ "Locale.lua", "Locale_deDE.lua", "Theme.lua", "Optimize.lua", "Core.lua", "Sources.lua", "Session.lua", "Share.lua", "Sync.lua", "Skills_Data.lua", "Loot_Data.lua", "Skills.lua", "Tours.lua", "Hud.lua", "Hazards_Data.lua", "NoGo.lua", "Routing/PathGrid.lua", "Routing/Path.lua", "Routing/PathJobs.lua", "Walk.lua", "Navigation.lua", "Options.lua" }) do
         local chunk = assert(loadfile(dir .. "/" .. f))
         chunk("Gatherline", ns)
     end

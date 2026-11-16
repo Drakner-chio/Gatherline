@@ -40,6 +40,8 @@ function GP:GatherKind(spellID)
     end
 end
 
+GP.SpellName = SpellName
+
 function GP:IsGatherSpell(spellID)
     if not gatherNames then
         gatherNames = {}
@@ -349,3 +351,46 @@ frame:SetScript("OnUpdate", function(_, elapsed)
     settle = 0
     if #GP.visits > 0 then GP:SettleVisits() end
 end)
+
+---------------------------------------------------------------------------
+-- Bags filling up: free slots counted (bags 0-4); while you ride, a warning
+-- in chat and on the HUD's lap card once they're down to db.bagWarn
+---------------------------------------------------------------------------
+function GP:FreeBagSlots()
+    if self.FAKE_FREE then return self.FAKE_FREE end
+    local C = _G.C_Container
+    local get = C and C.GetContainerNumFreeSlots or _G.GetContainerNumFreeSlots
+    if not get then return nil end
+    local free = 0
+    for bag = 0, 4 do
+        local ok, n = pcall(get, bag)
+        if ok and type(n) == "number" then free = free + n end
+    end
+    return free
+end
+
+GP.BAG_WARN_AGAIN = 120   -- seconds before the chat warning comes again
+
+function GP:CheckBags()
+    local warn = self.db and self.db.bagWarn or 0
+    if warn <= 0 or not (self.IsNavigating and self:IsNavigating()) then return end
+    local free = self:FreeBagSlots()
+    if not free then return end
+    if free <= warn then
+        local now = GetTime()
+        if not self.bagWarned or now - self.bagWarned > self.BAG_WARN_AGAIN or free < (self.bagWarnedAt or 99) then
+            self.bagWarned, self.bagWarnedAt = now, free
+            self.Print(free == 0 and L["|cffff6040your bags are full|r – gathering won't fit any more."]
+                or L["|cffff6040only %d bag slots free|r."]:format(free))
+            if PlaySound and SOUNDKIT and SOUNDKIT.RAID_WARNING then pcall(PlaySound, SOUNDKIT.RAID_WARNING) end
+        end
+    else
+        self.bagWarnedAt = nil
+    end
+end
+
+local bags = CreateFrame("Frame")
+pcall(bags.RegisterEvent, bags, "BAG_UPDATE_DELAYED")
+pcall(bags.RegisterEvent, bags, "BAG_UPDATE")
+bags:SetScript("OnEvent", function() if GP.db then GP:CheckBags() end end)
+GP.bagFrame = bags

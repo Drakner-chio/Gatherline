@@ -52,6 +52,7 @@ GP.DEFAULTS = {
     navReach = 30,         -- yards from a stop at which a ride moves on to the next
     navAhead = 10,         -- stops handed to Shortest Path at once (its numbered pins)
     navRespawn = 5,
+    bagWarn = 4,           -- warn while riding when bags are down to this many free slots (0 = never)
     navLearn = true,       -- smart laps use the regrowth times seen in each zone (never longer than navRespawn)
     syncGroup = true,      -- tell your group (Gatherline users) what you gather, and hear theirs        -- minutes a gathered node counts as gone: stops with only such nodes are skipped (0 = never)
     navLabel = "both",     -- what a stop is called: "number" (Wegpunkt 3/42), "nodes" (what's there), "both"
@@ -79,6 +80,7 @@ GP.RANGES = {
     navReach = { 15, 150 },
     navAhead = { 2, 25 },
     navRespawn = { 0, 30 },
+    bagWarn = { 0, 20 },
 }
 
 -- New routes take these in turn

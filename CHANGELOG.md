@@ -1,5 +1,17 @@
 # Gatherline
 
+## v1.10.0
+
+- **Best gold?** on *New route*: what every zone's herbs and ores you can gather are worth, at
+  Auctionator's prices – what a node yields on average comes from the Classic database – the best
+  zones in chat, and the best one picked with its most valuable nodes on. (Needs Auctionator with
+  prices scanned.) *Where to skill up* is now *Skill up?* next to it.
+- **Bags filling up:** while you ride, a warning in chat (with a sound) and on the lap card once
+  your bags are down to 4 free slots (*Gathering HUD → Warn at free bag slots*, 0 = never).
+- **Tracking button:** a HUD button shows the search the stop ahead needs (Find Herbs, Find
+  Minerals) and lights up when it isn't on; a click switches. It has a key in *Key Bindings →
+  Gatherline*. Like the other parts it can be moved, sized and switched off.
+
 ## v1.9.0
 
 - **Gather with your group:** Gatherline users in a group tell each other what they gather, so

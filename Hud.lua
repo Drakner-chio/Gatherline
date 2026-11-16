@@ -24,18 +24,19 @@ local WHITE = "Interface\\Buttons\\WHITE8X8"
 local DOT = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 
 GP.HUD_DEFAULTS = {
-    compass = true, lens = false, card = true,
+    compass = true, lens = false, card = true, track = true,
     scale = 100, alpha = 90, lensRange = 100, locked = true, combat = true,
     pos = {},
 }
 GP.HUD_RANGES = { scale = { 60, 160 }, alpha = { 30, 100 }, lensRange = { 50, 200 } }
 -- each part's own look: size, text size and opacity (%)
-GP.HUD_PART_KEYS = { "compass", "lens", "card" }
+GP.HUD_PART_KEYS = { "compass", "lens", "card", "track" }
 GP.HUD_PART_RANGES = { scale = { 50, 200 }, font = { 70, 160 }, alpha = { 20, 100 } }
 GP.HUD_PLACES = {
     compass = { "TOP", 0, -28 },
     lens = { "BOTTOM", 0, 150 },
     card = { "BOTTOM", 0, 92 },
+    track = { "BOTTOM", 250, 120 },
 }
 GP.HUD_TICK = 0.04
 
@@ -156,8 +157,8 @@ end
 
 -- A HUD part: a frame placed by its saved point, dragged while unlocked
 local parts = {}
-local function Part(key, w, h)
-    local f = CreateFrame("Frame", "GatherlineHud_" .. key, UIParent)
+local function Part(key, w, h, kind, name, template)
+    local f = CreateFrame(kind or "Frame", name or ("GatherlineHud_" .. key), UIParent, template)
     f:SetSize(w, h)
     f:SetFrameStrata("LOW")
     f:SetClampedToScreen(true)
@@ -199,6 +200,8 @@ end
 GP.HUD_UNDER_SPF = -18   -- room for its distance line
 
 local function Place(f)
+    -- the tracking button is secure: it can't be moved or changed in combat
+    if f.key == "track" and InCombatLockdown and InCombatLockdown() then return end
     local h = GP:HudSettings()
     local p = h.pos[f.key]
     local d = GP.HUD_PLACES[f.key]
@@ -221,7 +224,7 @@ local function Place(f)
             if l.fs.SetFont then pcall(l.fs.SetFont, l.fs, T.FONT, max(7, floor(l.size * pt.font / 100 + 0.5)), "") end
         end
     end
-    f:EnableMouse(not h.locked)
+    f:EnableMouse(f.key == "track" or not h.locked)   -- (the tracking button is clicked)
     if f.EnableMouseWheel then f:EnableMouseWheel(not h.locked) end
     f.handle:SetShown(not h.locked)
 end
@@ -606,7 +609,100 @@ local function UpdateCard(f, s, px, py)
         if (st.value or 0) > 0 then foot[#foot + 1] = L["%s/h"]:format(GP.FormatMoney(st.value / hours)) end
     end
     if s.skipped > 0 then foot[#foot + 1] = L["%d skipped (empty)"]:format(s.skipped) end
+    local warn = GP.db.bagWarn or 0
+    local free = warn > 0 and GP:FreeBagSlots()
+    if free and free <= warn then foot[#foot + 1] = "|cffff6040" .. L["bags: %d free"]:format(free) .. "|r" end
     f.foot:SetText(table.concat(foot, "   "))
+end
+
+---------------------------------------------------------------------------
+-- The tracking button: shows the search the stop ahead needs (Find Herbs,
+-- Find Minerals) and lights up when it isn't the one on; a click (or its key,
+-- in the game's key bindings) switches to it. A secure button: it changes only
+-- out of combat.
+---------------------------------------------------------------------------
+GP.TRACK_SPELLS = { ["Herb Gathering"] = 2383, ["Mining"] = 2580 }
+
+local function SpellIcon(id)
+    if C_Spell and C_Spell.GetSpellTexture then
+        local ok, t = pcall(C_Spell.GetSpellTexture, id)
+        if ok and t then return t end
+    end
+    if GetSpellTexture then
+        local ok, t = pcall(GetSpellTexture, id)
+        if ok and t then return t end
+    end
+end
+local function Knows(id)
+    if GP.FAKE_KNOWN then return GP.FAKE_KNOWN[id] end
+    if IsSpellKnown then
+        local ok, known = pcall(IsSpellKnown, id)
+        if ok then return known end
+    end
+    if IsPlayerSpell then
+        local ok, known = pcall(IsPlayerSpell, id)
+        if ok then return known end
+    end
+    return false
+end
+-- The icon of the search on now (nil if none or unknown)
+local function TrackingIcon()
+    if GP.FAKE_TRACKING ~= nil then return GP.FAKE_TRACKING end
+    if GetTrackingTexture then
+        local ok, t = pcall(GetTrackingTexture)
+        if ok then return t end
+    end
+end
+GP.HudTrackingIcon = TrackingIcon
+-- Key Bindings: the header and the key's name
+_G.BINDING_HEADER_GATHERLINE = "Gatherline"
+_G["BINDING_NAME_CLICK GatherlineTrackButton:LeftButton"] = L["Switch to the search the next stop needs"]
+
+local function BuildTrack()
+    local b = Part("track", 40, 40, "Button", "GatherlineTrackButton", "SecureActionButtonTemplate")
+    b:RegisterForClicks("AnyUp", "AnyDown")
+    Panel(b)
+    b.icon = Tex(b, "ARTWORK")
+    b.icon:SetPoint("TOPLEFT", 4, -4)
+    b.icon:SetPoint("BOTTOMRIGHT", -4, 4)
+    if b.icon.SetTexCoord then b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) end
+    b.glow = Tex(b, "OVERLAY")
+    b.glow:SetPoint("TOPLEFT", -3, 3)
+    b.glow:SetPoint("BOTTOMRIGHT", 3, -3)
+    b.glow:SetColorTexture(C.accent[1], C.accent[2], C.accent[3], 0.35)
+    b.glow:Hide()
+    b:SetScript("OnEnter", function(self)
+        if not GameTooltip then return end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(L["Tracking for the next stop"], C.accent[1], C.accent[2], C.accent[3])
+        GameTooltip:AddLine(self.needs and (self.glow:IsShown() and L["Click to switch to %s."] or L["%s is on."]):format(self.needs)
+            or L["Shows the search the stop ahead needs."], 1, 1, 1, true)
+        GameTooltip:AddLine(L["A key for it: Key Bindings, Gatherline."], 0.6, 0.6, 0.6, true)
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    return b
+end
+
+local function UpdateTrack(b, s)
+    if InCombatLockdown and InCombatLockdown() then return end
+    local kind = s.ahead[1] and s.ahead[1].kind
+    local id = kind and GP.TRACK_SPELLS[kind]
+    if id and not Knows(id) then id = nil end
+    if not id then
+        -- the other search, if you know it: something useful to show
+        for _, other in pairs(GP.TRACK_SPELLS) do if Knows(other) then id = other break end end
+    end
+    if not id then b:Hide() return end
+    local icon = SpellIcon(id)
+    b.icon:SetTexture(icon)
+    b.needs = GP.SpellName(id) or tostring(id)
+    local locked = GP:HudSettings().locked
+    b:SetAttribute("type", locked and "spell" or nil)
+    b:SetAttribute("spell", id)
+    local on = TrackingIcon()
+    b.glow:SetShown(icon ~= nil and on ~= icon)   -- not the search on now (or none on): light up
+    b.spellID = id
 end
 
 ---------------------------------------------------------------------------
@@ -643,6 +739,7 @@ local function Build()
     BuildCompass()
     BuildLens()
     BuildCard()
+    BuildTrack()
     building = nil
     for _, f in pairs(parts) do Place(f) end
 end
@@ -679,9 +776,20 @@ local function Tick()
     -- Shortest Path's compass came or went: the band moves with it
     local c = parts.compass
     if c and not h.pos.compass and (SpfCompass() ~= nil) ~= (c.underSpf == true) then Place(c) end
+    local combat = InCombatLockdown and InCombatLockdown()
     for key, f in pairs(parts) do
         local want = on and h[key]
-        if want then
+        if key == "track" then
+            -- secure: shown, hidden and set only out of combat
+            if not combat then
+                if want then
+                    f:Show()
+                    UpdateTrack(f, s)
+                elseif f:IsShown() then
+                    f:Hide()
+                end
+            end
+        elseif want then
             if not f:IsShown() then f:Show() end
             if key == "compass" then UpdateCompass(f, s, px, py, facing)
             elseif key == "lens" then UpdateLens(f, s, px, py, facing)

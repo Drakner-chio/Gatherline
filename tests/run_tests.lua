@@ -788,7 +788,7 @@ for _, k in ipairs(GP.DISPLAY_KEYS) do
 end
 local listed = {}
 for _, k in ipairs(GP.DISPLAY_KEYS) do listed[k] = true end
-local notOnTab = { minimapAngle = true, sight = true, nextColor = true, tabooShow = true, navLaps = true, walkRoutes = true, navReach = true, navAhead = true, navLabel = true, navRespawn = true, onlyGatherable = true, navLearn = true, syncGroup = true }
+local notOnTab = { minimapAngle = true, sight = true, nextColor = true, tabooShow = true, navLaps = true, walkRoutes = true, navReach = true, navAhead = true, navLabel = true, navRespawn = true, onlyGatherable = true, navLearn = true, syncGroup = true, bagWarn = true }
 for k in pairs(GP.DEFAULTS) do
     check(listed[k] or notOnTab[k], k .. ": every setting on the tab is restored")
 end
@@ -2348,6 +2348,83 @@ do
     GP.SYNC_PART = 200
     GP.harvests, GP.visits = {}, {}
     GP.db.respawn = nil
+end
+
+STEP("where it pays, bags, the tracking button")
+do
+    -- what nodes are worth: what they yield (Classic database) at Auctionator's prices
+    check(ns.NODE_LOOT["Copper Vein"] and ns.NODE_LOOT["Copper Vein"][1] == 2770, "a Copper Vein yields Copper Ore")
+    check(ns.NODE_EN["Kupfervorkommen"] == "Copper Vein", "by name in any language")
+    check(GP:NodeValue("Peacebloom") == nil and not GP:HasPrices(), "no Auctionator: no worth")
+    SlashCmdList.GATHERLINE("help")
+    Auctionator = { API = { v1 = { GetAuctionPriceByItemID = function(_, id)
+        return ({ [2447] = 150, [765] = 80, [2770] = 600, [2835] = 10 })[id] end } } }
+    check(near(GP:NodeValue("Peacebloom"), 300, 1e-6), "Peacebloom: 2 at 1s50")
+    GP.FAKE_RANKS = { ["Herb Gathering"] = 100, Mining = 100 }
+    local zones = GP:PayZones()
+    check(#zones >= 1 and zones[1].value > 0 and zones[1].nodes[1].each > 0, "zones ranked by worth")
+    GP:OpenConfig("new")
+    Click(ui.paysButton)
+    check(logHas("where it pays") and ui.newZone.getter() == zones[1].mapID, "Best gold?: listed, best zone picked")
+    local on = 0
+    for _, sw in ipairs(ui.kindSwitches) do if rawget(sw, "entry") and sw:IsShown() and sw:IsOn() then on = on + 1 end end
+    check(on > 0, "with its valuable nodes on")
+    Auctionator, GP.FAKE_RANKS = nil, nil
+    Click(ui.paysButton)
+    check(logHas("needs |cffffd100Auctionator"), "without prices: says what it needs")
+
+    -- bags filling up, while riding
+    local isNav = GP.IsNavigating
+    GP.IsNavigating = function() return true end
+    GP.bagWarned, GP.bagWarnedAt = nil, nil
+    GP.db.bagWarn, GP.FAKE_FREE = 4, 10
+    GP:CheckBags()
+    check(not logHas("bag slots free"), "plenty of room: quiet")
+    GP.FAKE_FREE = 3
+    GP:CheckBags()
+    check(logHas("only 3 bag slots free"), "three left: warned")
+    GP.FAKE_FREE = 0
+    GP:CheckBags()
+    check(logHas("your bags are full"), "full: warned again")
+    GP.IsNavigating, GP.FAKE_FREE = isNav, nil
+
+    -- the tracking button: the search the stop ahead needs
+    local hs = GP:HudSettings()
+    GetPlayerFacing = function() return 0 end
+    PLAYER.map, PLAYER.x, PLAYER.y = E, 0.5, 0.5
+    local oldSpell = C_Spell
+    C_Spell = { GetSpellTexture = function(id) return "icon" .. id end, GetSpellName = function(id) return "spell" .. id end }
+    GP.FAKE_KNOWN = { [2383] = true, [2580] = true }
+    GP.FAKE_TRACKING = "icon2383"
+    GP:SetHudPreview(true)
+    GP.HudTick()
+    local b = GP.hudParts.track
+    check(b:IsShown() and b:GetAttribute("spell") == 2580 and b:GetAttribute("type") == "spell", "next stop is ore: Find Minerals on the button")
+    check(b.glow:IsShown(), "herbs are on: it lights up")
+    GP.FAKE_TRACKING = "icon2580"
+    GP.HudTick()
+    check(not b.glow:IsShown(), "minerals on: quiet")
+    GP.FAKE_KNOWN = { [2383] = true }
+    GP.HudTick()
+    check(b:GetAttribute("spell") == 2383, "no Mining: your herb search instead")
+    GP.FAKE_KNOWN = {}
+    GP.HudTick()
+    check(not b:IsShown(), "no gathering search known: hidden")
+    GP.FAKE_KNOWN = { [2580] = true }
+    IN_COMBAT = true
+    GP.HudTick()
+    check(not b:IsShown(), "in combat it isn't touched")
+    IN_COMBAT = false
+    hs.track = false
+    GP.HudTick()
+    check(not b:IsShown(), "switched off")
+    hs.track = true
+    check(_G["BINDING_NAME_CLICK GatherlineTrackButton:LeftButton"] ~= nil, "a key binding for it")
+    GP:SetHudPreview(false)
+    GP.HudTick()
+    check(not b:IsShown(), "no ride: gone")
+    GP.FAKE_KNOWN, GP.FAKE_TRACKING, C_Spell, GetPlayerFacing = nil, nil, oldSpell, nil
+    GP:OpenConfig("routes")
 end
 
 STEP("without GatherMate2")

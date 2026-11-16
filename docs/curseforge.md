@@ -51,6 +51,8 @@ The **Guidance** page decides how the ride feels:
 - **New nodes join by themselves** wherever they add the least walking
 - **Gather together:** friends with Gatherline share what they gather – your laps skip what they just took – and send each other routes in one click
 - **Learns regrowth** per zone and shows how often a route's stops were already picked clean
+- **Best gold?** – which zone's herbs and ores are worth the most right now, at Auctionator's prices
+- **Tracking button** that switches between Find Herbs and Find Minerals for the next stop, plus a **bags-full warning**
 - **Ready-made no-go areas:** routes keep out of hostile towns and elite camps above your level – no drawing needed, each one switchable
 - **Gathering HUD:** a compass band with your next stops, a ground lens that turns with you, and a lap card with your time against your best – switch on what you like, place it where you like
 - **Tours over several zones:** the Barrens, then Stonetalon, then Ashenvale – Gatherline rides your routes one after the other and Shortest Path takes you from zone to zone

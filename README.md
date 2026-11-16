@@ -14,6 +14,7 @@ Gathering routes for **World of Warcraft: Forever**: the shortest loop through y
 - **Statistics per route:** best and average lap, nodes an hour and, with Auctionator, gold an hour
 - **Gather with your group:** friends with Gatherline share what they gather (the laps skip what they took) and send each other routes
 - **Regrowth learnt** per zone, and how often a route's stops were found empty
+- **Best gold?** ranks zones by what their nodes are worth (Auctionator), and a **tracking button** switches Find Herbs / Find Minerals for the next stop
 - **Ready-made no-go areas:** hostile towns and elite camps (by your level), each switchable – routes keep out
 - **Gathering HUD:** compass band, ground lens and lap card while you ride – each one switchable, movable and sizable
 - **Tours over several zones:** ride routes one after the other, Shortest Path takes you from zone to zone

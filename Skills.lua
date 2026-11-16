@@ -172,3 +172,83 @@ pcall(frame.RegisterEvent, frame, "SKILL_LINES_CHANGED")
 frame:SetScript("OnEvent", function()
     if GP.config and GP.config.IsShown and GP.config:IsShown() and GP.RefreshConfig then GP:RefreshConfig() end
 end)
+
+---------------------------------------------------------------------------
+-- Where it pays: zones ranked by what their nodes are worth (Loot_Data.lua:
+-- what gathering a node yields, priced with Auctionator)
+---------------------------------------------------------------------------
+-- Copper one gathering of this node is worth, or nil (no prices or no data)
+function GP:NodeValue(name)
+    local en = ns.NODE_EN and ns.NODE_EN[name] or name
+    local loot = ns.NODE_LOOT and ns.NODE_LOOT[en]
+    local A = _G.Auctionator
+    local api = type(A) == "table" and A.API and A.API.v1
+    if not (loot and api and type(api.GetAuctionPriceByItemID) == "function") then return nil end
+    local total, any = 0, false
+    for k = 1, #loot, 2 do
+        local ok, price = pcall(api.GetAuctionPriceByItemID, ADDON, loot[k])
+        if ok and type(price) == "number" then
+            total, any = total + price * loot[k + 1], true
+        end
+    end
+    return any and total or nil
+end
+
+function GP:HasPrices()
+    local A = _G.Auctionator
+    return type(A) == "table" and A.API and A.API.v1 and type(A.API.v1.GetAuctionPriceByItemID) == "function" and true or false
+end
+
+-- Zones ranked by the worth of all their nodes you can gather, best first:
+-- { { mapID, value, count, nodes = { { kind, name, count, each, value } } } }
+function GP:PayZones()
+    local out = {}
+    for _, mapID in ipairs(self:GatherZones()) do
+        local total, count, list = 0, 0, {}
+        for kind in pairs(self.SKILL_LINES) do
+            local counts = {}
+            self:EachNode(mapID, kind, function(_, _, name)
+                if not self:IsSkipped(name) then counts[name] = (counts[name] or 0) + 1 end
+            end)
+            for name, n in pairs(counts) do
+                if self:CanGather(name, kind) then
+                    local each = self:NodeValue(name)
+                    if each and each > 0 then
+                        total, count = total + each * n, count + n
+                        list[#list + 1] = { kind = kind, name = name, count = n, each = each, value = each * n }
+                    end
+                end
+            end
+        end
+        if total > 0 then
+            table.sort(list, function(a, b) return a.value > b.value end)
+            out[#out + 1] = { mapID = mapID, value = total, count = count, nodes = list }
+        end
+    end
+    table.sort(out, function(a, b) return a.value > b.value end)
+    return out
+end
+
+-- Says where it pays; returns the best zone (nil if none)
+function GP:PrintPays()
+    if not self:HasPrices() then
+        Print(L["needs |cffffd100Auctionator|r with prices scanned at the auction house, to know what the nodes are worth."])
+        return nil
+    end
+    local zones = self:PayZones()
+    if #zones == 0 then
+        Print(L["no zone has nodes you can gather with prices Auctionator knows yet. Scan the auction house, then try again."])
+        return nil
+    end
+    Print(L["where it pays (every node of a zone gathered once, at Auctionator's prices):"])
+    for i = 1, math.min(#zones, self.SKILL_ZONES_SHOWN) do
+        local z = zones[i]
+        local parts = {}
+        for k = 1, math.min(#z.nodes, 3) do
+            local e = z.nodes[k]
+            parts[k] = L["%s ×%d (%s each)"]:format(e.name, e.count, self.FormatMoney(e.each))
+        end
+        print(("  %d. |cffffd100%s|r: %s – %s"):format(i, self:MapName(z.mapID), self.FormatMoney(z.value), table.concat(parts, ", ")))
+    end
+    return zones[1]
+end

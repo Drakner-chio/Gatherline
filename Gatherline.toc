@@ -22,6 +22,7 @@ Session.lua
 Share.lua
 Sync.lua
 Skills_Data.lua
+Loot_Data.lua
 Skills.lua
 Tours.lua
 Hud.lua

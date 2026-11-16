@@ -150,3 +150,11 @@ spawns. Towns: flight masters of one faction with none of the other within 400 y
 their town ground (or a 150-yard circle). All in world yards; `NoGo.lua` turns them into a zone's map
 positions with `C_Map.GetMapPosFromWorldPos` (kept per zone) and adds the ones on to the solver's walls
 (`WallsFor` in Core.lua) and the world map (orange).
+
+## What nodes yield
+
+`Loot_Data.lua` (`ns.NODE_LOOT[English name] = { itemID, expected count per gathering, ... }`) is made by
+`python3 tools/make_loot.py <ClassicDB.sql.gz> Skills_Data.lua > Loot_Data.lua` from the CMaNGOS Classic
+database's gameobject and loot tables (groups and reference loot worked out, times the node's uses).
+`Skills_Data.lua`'s `ns.NODE_EN` maps every language's node name to the English one. `GP:NodeValue(name)`
+prices it with `Auctionator.API.v1.GetAuctionPriceByItemID`.

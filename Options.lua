@@ -348,7 +348,7 @@ end
 
 local function BuildNew(p, page)
     T.RowLabel(p, "Zone", 0, 0)
-    local zone = T.Dropdown(p, 240, {}, function(k) return k and GP:MapName(k) or "Pick a zone" end,
+    local zone = T.Dropdown(p, 186, {}, function(k) return k and GP:MapName(k) or "Pick a zone" end,
         function() return newZone end, function(k)
             if k ~= newZone then newZone, picked = k, {} end
             GP:RefreshConfig()
@@ -356,8 +356,8 @@ local function BuildNew(p, page)
     zone:SetPoint("TOPLEFT", DROP_X, 0)
     zone.menuScroll = 300
     refs.newZone = zone
-    local here = FlatButton(p, "My zone", 90)
-    here:SetPoint("LEFT", zone, "RIGHT", 8, 0)
+    local here = FlatButton(p, "My zone", 70)
+    here:SetPoint("LEFT", zone, "RIGHT", 6, 0)
     here:SetScript("OnClick", function()
         local m = GP:PlayerMap()
         if m and m ~= newZone then newZone, picked = m, {} end
@@ -365,8 +365,27 @@ local function BuildNew(p, page)
     end)
     T.Tooltip(here, "My zone", "Pick the zone you're in.")
     refs.myZone = here
-    local skill = FlatButton(p, "Where to skill up", 132)
-    skill:SetPoint("TOPRIGHT", 0, 0)
+    local pays = FlatButton(p, "Best gold?", 104)
+    pays:SetPoint("TOPRIGHT", 0, 0)
+    pays:SetScript("OnClick", function()
+        local best = GP:PrintPays()
+        if not best then return end
+        -- that zone, with the nodes that bring most of its worth picked
+        newZone, picked = best.mapID, {}
+        local sum = 0
+        for _, e in ipairs(best.nodes) do
+            if sum < best.value * 0.85 then
+                picked[e.kind] = picked[e.kind] or {}
+                picked[e.kind][e.name] = true
+                sum = sum + e.value
+            end
+        end
+        GP:RefreshConfig()
+    end)
+    T.Tooltip(pays, "Best gold?", "Works out what every zone's herbs and ores you can gather are worth, at Auctionator's prices (what a node yields on average, from the Classic database), lists the best zones in chat and picks the best one here with its most valuable nodes on.")
+    refs.paysButton = pays
+    local skill = FlatButton(p, "Skill up?", 104)
+    skill:SetPoint("RIGHT", pays, "LEFT", -6, 0)
     skill:SetScript("OnClick", function()
         local best = GP:PrintSkillUp()
         if not best then return end
@@ -380,7 +399,7 @@ local function BuildNew(p, page)
         end
         GP:RefreshConfig()
     end)
-    T.Tooltip(skill, "Where to skill up",
+    T.Tooltip(skill, "Skill up?",
         "Looks through every zone for the herbs and ores that still raise your Herbalism or Mining (orange and yellow), lists the best zones in chat, and picks the best one here with those nodes on.")
     refs.skillUp = skill
 
@@ -1278,20 +1297,28 @@ local function BuildHud(p)
         AddRefresher(function() sw:SetOn(GP:HudSettings()[key]) end)
         return sw
     end
-    local card = Card(p, "Show while riding", 0, 0, PAGE_W, 124)
+    local card = Card(p, "Show while riding", 0, 0, PAGE_W, 154)
     refs.hudCompass = HudSwitch(card, "Compass band", 12, -30, "compass",
         "A band at the top: the way you face, the stop you head for as a diamond and the next ones numbered, empty ones hollow. Under it the stop's name, how far, which way, and the lap so far. When Shortest Path Forever shows its own compass, the band moves under it; switch one of them off (Shortest Path's: \"Show the compass\" in its settings) if one is enough.")
     refs.hudLens = HudSwitch(card, "Ground lens", 12, -60, "lens",
         "A tilted disc round you that turns with you: the route's line along the ground for the next few yards and the stops on it.")
     refs.hudCard = HudSwitch(card, "Lap card", 12, -90, "card",
         "A card at the bottom: the stop you head for (how far, how many seconds), a dot for every stop of the lap, the lap time against your best, nodes and gold an hour.")
+    refs.hudTrack = HudSwitch(card, "Tracking button", 12, -120, "track",
+        "A button that shows the search the stop ahead needs (Find Herbs, Find Minerals) and lights up when it isn't on. Click it, or give it a key (Key Bindings, Gatherline), to switch. It can't change while you're in combat.")
     refs.hudCombat = HudSwitch(card, "Show in combat", COL2, -30, "combat",
         "Off: the HUD steps aside while you fight.")
+    refs.bagWarn = T.Slider(card, "Warn at free bag slots", COL2, -62, 244,
+        function() return GP.db.bagWarn end,
+        function(v) GP.db.bagWarn = v end,
+        GP.RANGES.bagWarn[1], GP.RANGES.bagWarn[2], "", 1, nil, "Never")
+    T.Tooltip(refs.bagWarn, "Warn at free bag slots", "While you ride, a warning in chat (with a sound) and on the lap card once your bags are down to this many free slots.")
+    AddRefresher(refs.bagWarn.Refresh)
 
     -- each part's look: pick the part, then its size, text size and opacity
-    local card2 = Card(p, "Look", 0, -130, PAGE_W, 156)
+    local card2 = Card(p, "Look", 0, -160, PAGE_W, 156)
     local hudPart = "compass"
-    local PART_NAMES = { compass = "Compass band", lens = "Ground lens", card = "Lap card" }
+    local PART_NAMES = { compass = "Compass band", lens = "Ground lens", card = "Lap card", track = "Tracking button" }
     local partLabel = Text(card2, "Part", "GameFontHighlight")
     partLabel:SetPoint("TOPLEFT", 12, -36)
     local pick = T.Dropdown(card2, 200, GP.HUD_PART_KEYS, function(k) return L[PART_NAMES[k]] end,
@@ -1322,7 +1349,7 @@ local function BuildHud(p)
     AddRefresher(refs.hudRange.Refresh)
     T.Tooltip(refs.hudRange, "Lens reach", "How far round you the ground lens shows the route.")
 
-    local card3 = Card(p, "Place", 0, -292, PAGE_W, 112)
+    local card3 = Card(p, "Place", 0, -322, PAGE_W, 112)
     refs.hudMove = T.LabeledSwitch(card3, "Move the parts", 12, -30)
     refs.hudMove:SetScript("OnClick", function(self)
         local h = GP:HudSettings()

@@ -1049,7 +1049,7 @@ do
     -- the window: a Taboo areas tab
     GP:OpenConfig("taboo")
     check(GP.config.currentTab == "taboo" and ui.tabooZone.getter() == E, "a No-go areas tab, on your zone")
-    check(ui.tabooEmpty:GetText():find("No no-go areas in Elwynn Forest", 1, true), "none yet")
+    check(ui.tabooEmpty:GetText():find("No no-go areas of your own in Elwynn Forest", 1, true), "none yet")
     check(ui.tabooShow:IsOn(), "shown on the world map to start")
 
     -- draw one: a band down the middle, over the Peacebloom at 0.5, 0.4
@@ -2177,6 +2177,78 @@ do
     check(not ok, "walks off for the session: straight lines")
     W.broken = nil
     geterrorhandler = was
+end
+
+STEP("ready-made no-go areas")
+do
+    -- the game's map <-> world: a zone's box in world yards (north up = world x, west left = world y)
+    local BOX = { [E] = { -10254, -1935, -7940, 1535 }, [W] = { -11733, -483, -9400, 3017 } }
+    local oldW, oldM = C_Map.GetWorldPosFromMapPos, C_Map.GetMapPosFromWorldPos
+    local V = function(x, y) return { GetXY = function() return x, y end } end
+    local oldV = CreateVector2D
+    CreateVector2D = V
+    C_Map.GetWorldPosFromMapPos = function(m, p)
+        local b = BOX[m]; if not b then return nil end
+        local mx, my = p:GetXY()
+        return 0, V(b[3] - my * (b[3] - b[1]), b[4] - mx * (b[4] - b[2]))
+    end
+    C_Map.GetMapPosFromWorldPos = function(cont, p, m)
+        local b = BOX[m]; if not b or cont ~= 0 then return nil end
+        local x, y = p:GetXY()
+        return m, V((b[4] - y) / (b[4] - b[2]), (b[3] - x) / (b[3] - b[1]))
+    end
+    for k in pairs(GP.noGoOutlines) do GP.noGoOutlines[k] = nil end
+    GP.FAKE_FACTION, GP.FAKE_LEVEL = "Horde", 14
+    local list = GP:NoGoAreas(W)
+    local byName = {}
+    for _, e in ipairs(list) do byName[e.area.name] = byName[e.area.name] or e end
+    check(byName["Sentinel Hill"] and byName["Sentinel Hill"].on and byName["Sentinel Hill"].area.kind == "town", "Horde in Westfall: Sentinel Hill kept out")
+    check(byName["Defias Henchman"] and byName["Defias Henchman"].on, "elite Defias at Moonbrook (15-18) at level 14: kept out")
+    check(byName["Hogger"] and byName["Hogger"].on, "Hogger (11) is still in reach at level 14 with 5 levels")
+    GP.FAKE_LEVEL = 30
+    list = GP:NoGoAreas(W)
+    for _, e in ipairs(list) do byName[e.area.name] = e end
+    check(not byName["Hogger"].on and byName["Hogger"].why == "low", "at 30: Hogger open")
+    check(byName["Mor'Ladim"].on, "Mor'Ladim (35) not")
+    GP.FAKE_FACTION = "Alliance"
+    check(not GP:NoGoAreas(W)[1].on and select(2, GP:NoGoAuto(GP:NoGoAreas(W)[1].area)) == "friendly", "Alliance: Sentinel Hill is yours")
+    GP.FAKE_FACTION = "Horde"
+    -- the polys reach the solver: a node inside Sentinel Hill counts as in a no-go area
+    local town = GP:NoGoAreas(W)[1].area.polys[1]
+    local cx, cy = 0, 0
+    for k = 1, #town, 2 do cx, cy = cx + town[k], cy + town[k + 1] end
+    cx, cy = cx / (#town / 2), cy / (#town / 2)
+    check(GP:InTaboo(W, cx, cy), "middle of Sentinel Hill: no-go")
+    -- by hand: off, and back
+    GP:SetNoGo(W, "t4", false)
+    check(not GP:InTaboo(W, cx, cy) and GP:NoGoSettings().areas.t4 == false, "switched off by hand")
+    GP:SetNoGo(W, "t4", true)
+    check(GP:NoGoSettings().areas.t4 == nil and GP:InTaboo(W, cx, cy), "on again: back to automatic")
+    -- a whole zone
+    GP:SetNoGoZone(W, false)
+    check(not GP:InTaboo(W, cx, cy) and #GP:NoGoPolys(W) == 0, "zone off")
+    GP:SetNoGoZone(W, true)
+    -- the page
+    GP:TabooTabInWindow(W)
+    check(ui.noGoTowns:IsOn() and ui.noGoCamps:IsOn() and ui.noGoZone:IsOn(), "the switches on the page")
+    local row
+    for _, r in ipairs(ui.noGoRows) do if r.id == "t4" and r:IsShown() then row = r end end
+    check(row and row:IsOn() and row.label:GetText():find("Sentinel Hill", 1, true), "Sentinel Hill listed")
+    Click(row)
+    check(GP:NoGoSettings().areas.t4 == false and not row:IsOn() and row.label:GetText():find("(by hand)", 1, true), "clicked off, marked by hand")
+    Click(ui.noGoAuto)
+    check(GP:NoGoSettings().areas.t4 == nil, "Automatic")
+    Click(ui.noGoTowns)
+    check(not GP:NoGoSettings().towns and not GP:InTaboo(W, cx, cy), "hostile towns off")
+    Click(ui.noGoTowns)
+    ui.noGoBelow:SetValue(0)
+    check(GP:NoGoSettings().below == 0, "slider")
+    GP:NoGoSettings().below = 5
+    GP.FAKE_FACTION, GP.FAKE_LEVEL = nil, nil
+    C_Map.GetWorldPosFromMapPos, C_Map.GetMapPosFromWorldPos, CreateVector2D = oldW, oldM, oldV
+    for k in pairs(GP.noGoOutlines) do GP.noGoOutlines[k] = nil end
+    GP:NoGoChanged()
+    GP:OpenConfig("routes")
 end
 
 STEP("without GatherMate2")

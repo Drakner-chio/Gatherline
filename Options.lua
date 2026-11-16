@@ -758,6 +758,69 @@ local function BuildTaboo(p)
         return r
     end
 
+    -- ready-made areas (NoGo.lua), under your own in the same list
+    local ready = CreateFrame("Frame", nil, list)
+    ready:SetSize(PAGE_W - 30, 196)
+    local readyTitle = Text(ready, "", "GameFontNormalSmall", C.muted)
+    readyTitle:SetPoint("TOPLEFT", 4, -8)
+    readyTitle:SetText(T.Upper(L["Ready-made no-go areas"]))
+    local readyNote = T.Note(ready, "Hostile towns and elite camps, ready to use. Switch each one on or off; routes worked out from then on keep out of the ones that are on (orange on the map).", 4, -26, PAGE_W - 40)
+    local towns = T.LabeledSwitch(ready, "Hostile towns", 4, -66)
+    towns:SetScript("OnClick", function(self)
+        GP:NoGoSettings().towns = not self:IsOn()
+        GP:NoGoChanged()
+    end)
+    T.Tooltip(towns, "Hostile towns", "The other faction's towns with a flight master (Southshore, Astranaar ...), as far as the game counts them to the town. Their guards come for you.")
+    refs.noGoTowns = towns
+    local camps = T.LabeledSwitch(ready, "Elite camps", COL2 - 10, -66)
+    camps:SetScript("OnClick", function(self)
+        GP:NoGoSettings().camps = not self:IsOn()
+        GP:NoGoChanged()
+    end)
+    T.Tooltip(camps, "Elite camps", "Where elites, rare elites and bosses stand in the open world, from the Classic database. Ones far enough below your level are left open (the slider).")
+    refs.noGoCamps = camps
+    local below = T.Slider(ready, "Elite camps open from this many levels below you", 4, -98, PAGE_W - 48,
+        function() return GP:NoGoSettings().below end,
+        function(v) GP:NoGoSettings().below = v; GP:NoGoChanged() end,
+        GP.NOGO_BELOW[1], GP.NOGO_BELOW[2], "", 1)
+    T.Tooltip(below, "Elite camps open from this many levels below you", "An elite camp whose highest level is this many below yours or more no longer keeps routes out. As you level, camps open by themselves.")
+    refs.noGoBelow = below
+    local zoneAll = T.LabeledSwitch(ready, "", 4, -146)
+    zoneAll:SetScript("OnClick", function(self)
+        if not tabooZone then return end
+        GP:SetNoGoZone(tabooZone, not self:IsOn())
+    end)
+    T.Tooltip(zoneAll, "This zone", "Off: none of the ready-made areas in this zone keep routes out, whatever their own switch says.")
+    refs.noGoZone = zoneAll
+    local rebuild = FlatButton(ready, "Rebuild routes here", 160, 22)
+    rebuild:SetPoint("TOPRIGHT", -4, -144)
+    rebuild:SetScript("OnClick", function(self)
+        if self.disabled or not tabooZone then return end
+        GP:RebuildZone(tabooZone)
+    end)
+    T.Disabler(rebuild, { rebuild })
+    T.Tooltip(rebuild, "Rebuild routes here", "Works the routes in this zone out again, to keep out of the areas as they're switched now.")
+    refs.noGoRebuild = rebuild
+    local auto = FlatButton(ready, "Automatic", 100, 22)
+    auto:SetPoint("RIGHT", rebuild, "LEFT", -6, 0)
+    auto:SetScript("OnClick", function() if tabooZone then GP:ResetNoGoZone(tabooZone) end end)
+    T.Tooltip(auto, "Automatic", "Puts every switch in this zone back to what it'd be on its own: hostile towns on, elite camps by your level.")
+    refs.noGoAuto = auto
+    local NOGO_ROW = 28
+    local noGoRows = {}
+    refs.noGoRows = noGoRows
+    local function NoGoRow(i)
+        if noGoRows[i] then return noGoRows[i] end
+        local sw = T.LabeledSwitch(list, "", 4, 0, PAGE_W - 110)
+        sw:SetScript("OnClick", function(self)
+            if not (tabooZone and self.id) then return end
+            GP:SetNoGo(tabooZone, self.id, not self:IsOn())
+        end)
+        T.Tooltip(sw, function(self) return self.title end, function(self) return self.tip end)
+        noGoRows[i] = sw
+        return sw
+    end
+
     AddRefresher(function()
         if not tabooZone then tabooZone = GP:PlayerMap() end
         zone.keys = TabooZoneChoices()
@@ -777,11 +840,43 @@ local function BuildTaboo(p)
             r:Show()
         end
         for i = #areas + 1, #rows do rows[i]:Hide(); rows[i].del.index = nil end
-        scroll:SetContent(PAGE_W - 30, math.max(1, #areas * TABOO_ROW), true)
+        -- the ready-made ones, after yours
+        local y = #areas > 0 and (-(#areas * TABOO_ROW) - 8) or -26   -- (room for the line saying there are none)
+        local n = GP:NoGoSettings()
+        local noGo = tabooZone and GP:NoGoAreas(tabooZone) or {}
+        ready:ClearAllPoints()
+        ready:SetPoint("TOPLEFT", 0, y)
+        ready:SetShown(tabooZone ~= nil)
+        towns:SetOn(n.towns)
+        camps:SetOn(n.camps)
+        below:Refresh()
+        zoneAll:SetOn(tabooZone ~= nil and not n.zones[tabooZone])
+        zoneAll.label:SetText(tabooZone and L["Ready-made areas in %s"]:format(GP:MapName(tabooZone)) or "")
+        rebuild:SetDisabled(not tabooZone or #GP:RoutesOn(tabooZone) == 0)
+        y = y - 196
+        local zoneOn = tabooZone ~= nil and not n.zones[tabooZone]
+        for i, e in ipairs(noGo) do
+            local sw = NoGoRow(i)
+            sw:ClearAllPoints()
+            sw:SetPoint("TOPLEFT", 4, y - (i - 1) * NOGO_ROW)
+            sw.id = e.area.id
+            sw:SetOn(e.on)
+            sw:SetDisabled(not zoneOn)
+            local tag = e.hand ~= nil and ("  |cff" .. T.ACCENT_HEX .. L["(by hand)"] .. "|r")
+                or (not e.auto and e.why == "low" and ("  |cff8a8070" .. L["(below your level)"] .. "|r"))
+                or (not e.auto and e.why == "friendly" and ("  |cff8a8070" .. L["(your faction)"] .. "|r")) or ""
+            sw.label:SetText(("%s  |cff8a8070%s|r%s"):format(e.area.name, GP:NoGoDetail(e), tag))
+            sw.title = e.area.name
+            sw.tip = e.on and L["Routes keep out of it. Click to let them in."] or L["Routes may go through it. Click to keep them out."]
+            sw:Show(); sw.label:Show()
+        end
+        for i = #noGo + 1, #noGoRows do noGoRows[i]:Hide(); noGoRows[i].label:Hide(); noGoRows[i].id = nil end
+        local total = (#areas > 0 and (#areas * TABOO_ROW + 8) or 26) + (tabooZone and 196 or 0) + #noGo * NOGO_ROW
+        scroll:SetContent(PAGE_W - 30, math.max(1, total), true)
         if not tabooZone then
             empty:SetText(L["Pick a zone above, or click My zone for the one you're in."])
         elseif #areas == 0 then
-            empty:SetText(L["No no-go areas in %s yet. Click Draw a no-go area."]:format(GP:MapName(tabooZone)))
+            empty:SetText(L["No no-go areas of your own in %s yet. Click Draw a no-go area."]:format(GP:MapName(tabooZone)))
         else
             empty:SetText(L[""])
         end
@@ -1383,8 +1478,8 @@ local function BuildAbout(p)
             or L["To bring over routes from GatherPath Plus or GatherPath Forever, switch that addon on for one login, then come back here. (It happens by itself the first time, when Gatherline has no routes yet.)"])
     end)
 
-    local card3 = Card(p, "Made from", 0, -304, PAGE_W, 130)
-    T.Note(card3, "Gatherline grew out of GatherPath Forever by severd8 (MIT licence), whose route solver it still uses. The walking search in Routing/ is Shortest Path Forever's, by cjber (GPL-3.0), and its walking maps come from Shortest Path Forever itself. So Gatherline is under GPL-3.0 too. The skill each herb and ore needs comes from GatherLite by Wuild (MIT licence).", 12, -30, PAGE_W - 24)
+    local card3 = Card(p, "Made from", 0, -304, PAGE_W, 150)
+    T.Note(card3, "Gatherline grew out of GatherPath Forever by severd8 (MIT licence), whose route solver it still uses. The walking search in Routing/ is Shortest Path Forever's, by cjber (GPL-3.0), and its walking maps come from Shortest Path Forever itself. So Gatherline is under GPL-3.0 too. The skill each herb and ore needs comes from GatherLite by Wuild (MIT licence). The ready-made no-go areas: elite camps from the CMaNGOS Classic database, hostile towns from Shortest Path Forever (both GPL-3.0).", 12, -30, PAGE_W - 24)
 end
 
 local TABS = {

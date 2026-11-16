@@ -12,6 +12,7 @@ Gathering routes for **World of Warcraft: Forever**: the shortest loop through y
 - **Guidance settings:** how close you need to get before the next stop, how many stops are shown ahead, and whether stops are called by number (*Stop 3/42*), by what's there (*Copper Vein ×2*) or both
 - **Smart laps:** stops whose nodes you just gathered are skipped until they can be back
 - **Statistics per route:** best and average lap, nodes an hour and, with Auctionator, gold an hour
+- **Ready-made no-go areas:** hostile towns and elite camps (by your level), each switchable – routes keep out
 - **Gathering HUD:** compass band, ground lens and lap card while you ride – each one switchable, movable and sizable
 - **Tours over several zones:** ride routes one after the other, Shortest Path takes you from zone to zone
 - **Routes by skill:** every node shows the skill it needs in skill-up colours; "only what I can gather"; *Where to skill up* finds the best zone for your Herbalism or Mining
@@ -56,6 +57,6 @@ The **About** page in the window shows whether everything is there.
 
 ## Credits and licence
 
-Gatherline grew out of **GatherPath Forever** by severd8 (MIT), whose route solver it still uses. The walking search in `Routing/` is from **Shortest Path Forever** by cjber (GPL-3.0), and its walking maps come from Shortest Path Forever itself. Gatherline is therefore licensed under **GPL-3.0-or-later** (`LICENSE`); GatherPath Forever's MIT notice is in `LICENSE-MIT-GatherPathForever`. The gathering skill each herb and ore needs (`Skills_Data.lua`, made by `tools/make_skills.py`) comes from **GatherLite** by Wuild (MIT, `LICENSE-MIT-GatherLite`).
+Gatherline grew out of **GatherPath Forever** by severd8 (MIT), whose route solver it still uses. The walking search in `Routing/` is from **Shortest Path Forever** by cjber (GPL-3.0), and its walking maps come from Shortest Path Forever itself. Gatherline is therefore licensed under **GPL-3.0-or-later** (`LICENSE`); GatherPath Forever's MIT notice is in `LICENSE-MIT-GatherPathForever`. The gathering skill each herb and ore needs (`Skills_Data.lua`, made by `tools/make_skills.py`) comes from **GatherLite** by Wuild (MIT, `LICENSE-MIT-GatherLite`). The ready-made no-go areas (`Hazards_Data.lua`, made by `tools/make_hazards.py`): elite camps from the **CMaNGOS Classic database** (GPL-3.0), hostile towns from **Shortest Path Forever**'s flight masters and town ground (GPL-3.0).
 
 Development notes: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).

@@ -1,5 +1,21 @@
 # Gatherline
 
+## v1.8.0
+
+- **Ready-made no-go areas** on the *No-go areas* page, under your own:
+  - **Hostile towns:** the other faction's towns with a flight master (Southshore, Astranaar …),
+    as far as the game counts them to the town – on for you automatically.
+  - **Elite camps:** about 900 places in the open world where elites, rare elites and bosses
+    stand (Hogger, the Defias at Moonbrook, Tyr's Hand …), with their levels. They keep routes
+    out until you're well above them (*Elite camps open from this many levels below you*,
+    5 to start with); as you level, camps open by themselves.
+  - Switch each one on or off by hand, a whole zone at once, or each kind; *Automatic* puts a
+    zone's switches back. They show orange on the world map.
+  - Routes worked out from then on keep out of the ones that are on; *Rebuild routes here*
+    works a zone's routes out again.
+- No other addon is needed for this: the data is built into Gatherline (elite camps from the
+  CMaNGOS Classic database, hostile towns from Shortest Path Forever, both GPL-3.0).
+
 ## v1.7.4
 
 - If Gatherline ever can't read Shortest Path Forever's walking maps (Shortest Path Forever

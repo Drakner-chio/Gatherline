@@ -24,6 +24,8 @@ Skills_Data.lua
 Skills.lua
 Tours.lua
 Hud.lua
+Hazards_Data.lua
+NoGo.lua
 Pin.xml
 Routing\PathGrid.lua
 Routing\Path.lua

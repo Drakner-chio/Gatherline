@@ -496,8 +496,13 @@ end
 local wallCache = {}
 GP.tabooVersion = 0
 local function WallsFor(mapID)
-    local list = GP.db.taboos[mapID]
-    if not list or #list == 0 then return nil end
+    -- your own areas, and the ready-made ones on now (NoGo.lua)
+    local list = {}
+    for _, xy in ipairs(GP.db.taboos[mapID] or {}) do list[#list + 1] = xy end
+    if GP.NoGoPolys then
+        for _, xy in ipairs(GP:NoGoPolys(mapID)) do list[#list + 1] = xy end
+    end
+    if #list == 0 then return nil end
     local c = wallCache[mapID]
     if c and c.version == GP.tabooVersion then return c.walls end
     local w, h = Yards(mapID)
@@ -1622,8 +1627,13 @@ function Pin:DrawTaboos(mapID, w, h, scale)
     pool:Begin()
     local db = GP.db
     if db and (db.tabooShow or GP.drawing) and mapID then
-        local c = GP.TABOO_COLOR
-        for _, xy in ipairs(GP:Taboos(mapID)) do
+        local shapes = {}
+        for _, xy in ipairs(GP:Taboos(mapID)) do shapes[#shapes + 1] = { xy, GP.TABOO_COLOR } end
+        if GP.NoGoPolys then
+            for _, xy in ipairs(GP:NoGoPolys(mapID)) do shapes[#shapes + 1] = { xy, GP.NOGO_COLOR } end
+        end
+        for _, shape in ipairs(shapes) do
+            local xy, c = shape[1], shape[2]
             local n = floor(#xy / 2)
             local xs, ys = {}, {}
             for i = 1, n do xs[i], ys[i] = xy[2 * i - 1] * w, -xy[2 * i] * h end

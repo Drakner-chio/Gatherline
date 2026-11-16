@@ -1,6 +1,6 @@
 # Gatherline
 
-## v1.10.2
+## v1.10.3
 
 - **Fixed: Gatherline using most of the CPU and lots of memory** (low frame rate) since the
   ready-made no-go areas. Every check "is this node in a no-go area" built the solver's whole
@@ -9,6 +9,11 @@
   out, each simplified to at most 10 corners.
 - The HUD does less work: its view of the ride is kept for a quarter of a second, the lens and the
   lap card are redrawn a few times a second, bag slots counted once a second.
+
+## v1.10.2
+
+- Nothing new in the addon. Releases now set the CurseForge relations themselves (Shortest Path
+  Forever required; GatherMate2, GatherLite and Auctionator optional).
 
 ## v1.10.1
 

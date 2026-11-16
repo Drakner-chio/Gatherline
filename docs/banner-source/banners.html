@@ -239,8 +239,7 @@ h2 em { font-style: normal; color: var(--jade); }
     <div class="set">
       <div class="h">On the map while you ride</div>
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px 26px;">
-        <div class="sw"><div class="tr"></div>Show arrows</div><div class="sw off"><div class="tr"></div>Reverse direction</div>
-        <div class="sw"><div class="tr"></div>Line to the route</div>
+        <div class="sw"><div class="tr"></div>Show arrows</div><div class="sw"><div class="tr"></div>Line to the route</div>
       </div>
     </div>
   </div>
@@ -253,16 +252,152 @@ h2 em { font-style: normal; color: var(--jade); }
     <div class="pill">And more</div>
     <h2>Made to be <em>used again and again.</em></h2>
     <p class="lead">A good route is worth a few minutes of working out – you ride it every day. Gatherline takes the time to get it right, then keeps out of the way.</p>
-    <p class="foot">Needs GatherMate2 · Shortest Path Forever recommended</p>
+    <p class="foot">GatherMate2 or GatherLite · Shortest Path Forever · English and German</p>
   </div>
   <div class="right">
     <div class="feat" style="width: 620px;">
-      <div class="f"><i>No-go areas</i><b>Keep out</b><span>Draw parts of a zone on the world map – routes go round them.</span></div>
-      <div class="f"><i>Lines</i><b>Along the ground</b><span>The line on your map follows the way you actually ride.</span></div>
-      <div class="f"><i>Passes within</i><b>See it, skip the walk</b><span>With Find Herbs or Find Minerals the route only comes close enough to see each node.</span></div>
-      <div class="f"><i>New nodes</i><b>Join by themselves</b><span>Found a new vein? It's added where it costs the least walking.</span></div>
-      <div class="f"><i>Skip list</i><b>No more poor ore</b><span>Right-click a node on New route to leave it out of every route.</span></div>
-      <div class="f"><i>Coming from GatherPath?</i><b>Bring your routes</b><span>Routes from GatherPath Forever come over by themselves.</span></div>
+      <div class="f"><i>Best gold?</i><b>Where it pays</b><span>Every zone's herbs and ores priced with Auctionator – the best one picked for you.</span></div>
+      <div class="f"><i>Skill up?</i><b>Skill-up colours</b><span>Every node shows the skill it needs, and the best zone to raise yours.</span></div>
+      <div class="f"><i>Lines</i><b>Line, dashes or dots</b><span>Along the ground, as fine or bold as you like, on map and minimap.</span></div>
+      <div class="f"><i>Share</i><b>One click to a friend</b><span>Send a route to your group or a player – or as one line of text.</span></div>
+      <div class="f"><i>Statistics</i><b>Your best route</b><span>Best lap, nodes and gold an hour – and which route brings the most.</span></div>
+      <div class="f"><i>Skip list</i><b>No more poor ore</b><span>Right-click a node to leave it out of every route.</span></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 6: the gathering HUD -->
+<section class="banner" id="b6"><div class="card" style="grid-template-columns: 400px 1fr;">
+  <div class="brand"><img src="../../media/icon-400.png"><span>Gatherline</span></div>
+  <div class="left">
+    <div class="pill">Gathering HUD</div>
+    <h2>Eyes on the road, <em>not the minimap.</em></h2>
+    <p class="lead">A compass band with your next stops, a ground lens that turns with you, and a lap card that races your best time.</p>
+    <p class="foot">Each part on or off · move and size it · a tracking button for Find Herbs / Find Minerals</p>
+  </div>
+  <div class="right" style="flex-direction: column; gap: 22px;">
+    <div style="width: 600px; background: rgba(12,14,17,.85); border: 1px solid #2b3036; height: 52px; position: relative; overflow: hidden;">
+      <div style="position:absolute; inset:0; display:flex; justify-content: space-around; align-items: flex-start; padding-top: 8px; color: var(--muted); font-family: Grotesk; font-weight:600; font-size: 13px;">
+        <span>|<br>S</span><span style="opacity:.4">|</span><span>|<br>SW</span><span style="opacity:.4">|</span><span>|<br>W</span><span style="opacity:.4">|</span><span>|<br>NW</span>
+      </div>
+      <div style="position:absolute; left: 330px; top: 13px; width: 18px; height: 18px; background: var(--ore); transform: rotate(45deg); box-shadow: 0 0 14px var(--ore);"></div>
+      <div style="position:absolute; left: 430px; top: 15px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--herb);"></div>
+      <div style="position:absolute; left: 470px; top: 15px; width: 14px; height: 14px; border-radius: 50%; border: 2px dashed #6b7280;"></div>
+    </div>
+    <div style="font-size: 18px; color: var(--ink); margin-top: -10px;">Tin Vein <span style="color: var(--jade); font-family: Grotesk; font-weight: 700;">84 yd</span> <span style="color: var(--muted)">a little right</span></div>
+    <svg width="560" height="170" viewBox="0 0 560 170">
+      <ellipse cx="280" cy="90" rx="250" ry="76" fill="rgba(10,14,16,.6)" stroke="rgba(238,240,244,.18)" stroke-width="1.5"/>
+      <ellipse cx="280" cy="90" rx="166" ry="50" fill="none" stroke="rgba(238,240,244,.08)"/>
+      <path d="M280 90 C 300 70, 340 60, 360 40 C 380 22, 330 18, 280 28 C 230 38, 190 30, 170 46" fill="none" stroke="#3fd0a0" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="360" cy="40" r="9" fill="#e8964a"/><circle cx="360" cy="40" r="17" fill="none" stroke="#e8964a" stroke-opacity=".5" stroke-width="2"/>
+      <circle cx="280" cy="28" r="7" fill="none" stroke="#6b7280" stroke-width="2" stroke-dasharray="3 3"/>
+      <circle cx="170" cy="46" r="7" fill="#7fd35a"/>
+      <polygon points="280,76 290,100 280,94 270,100" fill="#eef0f4"/>
+      <text x="378" y="44" fill="#e8964a" font-family="Inter" font-size="13" font-weight="600">Tin Vein  84 yd</text>
+      <text x="292" y="22" fill="#8a909b" font-family="Inter" font-size="12">empty</text>
+    </svg>
+    <div style="display:flex; gap: 14px; align-items: center;">
+      <div style="width: 470px; background: rgba(12,14,17,.85); border: 1px solid #2b3036; padding: 12px 16px;">
+        <div style="display:flex; justify-content: space-between;">
+          <div><div style="font-size: 10.5px; letter-spacing: 1.2px; color: var(--muted);">STOP 14/23</div>
+            <div style="font-size: 17px; color: var(--ore); font-weight: 600;">Tin Vein <span style="color: var(--jade); font-family: Grotesk;">84 yd · 9 s</span></div></div>
+          <div style="text-align:right;"><div style="font-family: Grotesk; font-weight: 700; font-size: 26px; color: var(--ink);">3:12</div>
+            <div style="font-family: Grotesk; font-size: 13px; color: #6fd38a;">−0:14 to your best</div></div>
+        </div>
+        <div style="display:flex; gap: 6px; margin: 10px 0 8px; align-items: center;">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;border:2px solid #6b7280;box-sizing:border-box"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--jade)"></span>
+          <span style="width:12px;height:12px;border-radius:50%;border:2px solid var(--jade);box-sizing:border-box;box-shadow:0 0 8px var(--jade)"></span>
+          <span style="width:8px;height:8px;border-radius:50%;background:#2c3036"></span><span style="width:8px;height:8px;border-radius:50%;background:#2c3036"></span><span style="width:8px;height:8px;border-radius:50%;background:#2c3036"></span><span style="width:8px;height:8px;border-radius:50%;border:2px dashed #6b7280;box-sizing:border-box"></span><span style="width:8px;height:8px;border-radius:50%;background:#2c3036"></span><span style="width:8px;height:8px;border-radius:50%;background:#2c3036"></span><span style="width:8px;height:8px;border-radius:50%;background:#2c3036"></span><span style="width:8px;height:8px;border-radius:50%;background:#2c3036"></span><span style="width:8px;height:8px;border-radius:50%;background:#2c3036"></span>
+        </div>
+        <div style="font-size: 12.5px; color: var(--muted); display:flex; gap: 16px;"><span>Lap 2</span><span>41 nodes/h</span><span>18g 40s/h</span><span>1 skipped (empty)</span></div>
+      </div>
+      <div style="width: 56px; height: 56px; background: rgba(12,14,17,.85); border: 1px solid #2b3036; box-shadow: 0 0 0 3px rgba(63,208,160,.45); display:flex; align-items:center; justify-content:center;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e8964a" stroke-width="2" stroke-linejoin="round"><path d="M3 15l4-8 6-3 6 6-3 7-8 1z"/><path d="M7 7l4 6 6-3"/></svg>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 7: gathering together, smarter laps -->
+<section class="banner" id="b7"><div class="card">
+  <div class="brand"><img src="../../media/icon-400.png"><span>Gatherline</span></div>
+  <div class="left">
+    <div class="pill">Smart laps</div>
+    <h2>Never ride past <em>an empty node.</em></h2>
+    <p class="lead">Gatherline notes what you gather – and what your friends with Gatherline gather – and skips the stops that can't be back yet. It learns how fast each zone grows back.</p>
+    <p class="foot">Routes sent to your group in one click · warns before your bags are full</p>
+  </div>
+  <div class="right" style="flex-direction: column; gap: 16px; align-items: stretch; padding: 40px 10px 30px 20px;">
+    <div class="chat" style="background: rgba(6,8,10,.75); padding: 14px 16px; border: 1px solid #23262c;">
+      <span class="gl">Gatherline</span>: lap 3 of Arathi Highlands - Iron done in 5:41. 3 stops skipped (still empty).<br>
+      <span style="color:#ffd34d">[Party] Bob</span>: got the two at Go'Shek, go on<br>
+      <span class="gl">Gatherline</span>: <span style="color:#ff6040">only 3 bag slots free</span>.
+    </div>
+    <div class="feat">
+      <div class="f"><i>Together</i><b>Your friend took it</b><span>Gatherline users in a group share what they gather – your laps skip it too.</span></div>
+      <div class="f"><i>Regrowth</i><b>Learnt per zone</b><span>How soon a node was back, seen again and again – <span style="color:var(--ink)">Arathi, ore: 6:20</span>.</span></div>
+      <div class="f"><i>Found empty</i><b>Crowded routes</b><span>Stops someone else got to first show up in the statistics: <span style="color:var(--ink)">35 % found empty</span>.</span></div>
+      <div class="f"><i>Share</i><b>To your group</b><span>Send a route to the group or a player; they're asked before it's added.</span></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 8: ready-made no-go areas -->
+<section class="banner" id="b8"><div class="card" style="grid-template-columns: 420px 1fr;">
+  <div class="brand"><img src="../../media/icon-400.png"><span>Gatherline</span></div>
+  <div class="left">
+    <div class="pill">No-go areas</div>
+    <h2>Guards and elites? <em>Routes go round.</em></h2>
+    <p class="lead">The other faction's towns and some 900 elite camps are built in. Camps open by themselves as you outlevel them – and you can draw your own.</p>
+    <p class="foot">Each area, each zone and each kind switchable · orange on the world map</p>
+  </div>
+  <div class="right">
+    <svg width="660" height="300" viewBox="0 0 660 300" style="position:absolute; left: 0; top: 60px;">
+      <rect x="0" y="0" width="660" height="300" fill="#121a14" stroke="#23262c"/>
+      <path d="M0 270 C 120 255, 200 290, 330 270 C 450 250, 560 285, 660 262 L660 300 L0 300Z" fill="#162019"/>
+      <polygon points="390,90 470,70 540,110 540,190 470,220 400,190" fill="rgba(250,148,40,.16)" stroke="#fa9428" stroke-width="2.5"/>
+      <g stroke="#fa9428" stroke-opacity=".35"><line x1="400" y1="120" x2="460" y2="75"/><line x1="400" y1="160" x2="510" y2="90"/><line x1="410" y1="190" x2="540" y2="115"/><line x1="440" y1="210" x2="540" y2="150"/></g>
+      <text x="425" y="150" fill="#fa9428" font-family="Grotesk" font-weight="700" font-size="15">Hammerfall</text>
+      <polygon points="120,120 180,100 220,140 190,190 130,180" fill="rgba(250,148,40,.16)" stroke="#fa9428" stroke-width="2.5"/>
+      <text x="170" y="86" fill="#fa9428" font-family="Grotesk" font-weight="700" font-size="13" text-anchor="middle">Boulderfist ×24</text>
+      <polygon points="280,175 340,160 352,205 300,220" fill="rgba(242,56,38,.12)" stroke="#f23826" stroke-width="2.5"/>
+      <text x="316" y="240" fill="#f23826" font-family="Inter" font-size="12" text-anchor="middle">your own</text>
+      <path d="M40 240 C 120 225, 200 250, 250 255 C 300 260, 340 250, 380 236 C 430 222, 560 250, 620 232" fill="none" stroke="#3fd0a0" stroke-width="5" stroke-linecap="round"/>
+      <g fill="#0b0d10" stroke="#3fd0a0" stroke-width="3"><circle cx="120" cy="230" r="8"/><circle cx="250" cy="255" r="8"/><circle cx="380" cy="236" r="8"/><circle cx="520" cy="246" r="8"/></g>
+    </svg>
+    <div class="set" style="position:absolute; right: 0; top: 380px; width: 380px;">
+      <div class="h">Ready-made in Arathi Highlands</div>
+      <div style="display:flex; flex-direction:column; gap: 10px;">
+        <div class="sw"><div class="tr"></div>Hammerfall <span style="color:var(--muted)">Horde town</span></div>
+        <div class="sw"><div class="tr"></div>Boulderfist Ogre <span style="color:var(--muted)">elite, level 32–34</span></div>
+        <div class="sw off"><div class="tr"></div>Witherbark Troll <span style="color:var(--muted)">(below your level)</span></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 9: tours -->
+<section class="banner" id="b9"><div class="card">
+  <div class="brand"><img src="../../media/icon-400.png"><span>Gatherline</span></div>
+  <div class="left">
+    <div class="pill">Tours</div>
+    <h2>One zone done? <em>On to the next.</em></h2>
+    <p class="lead">Put routes together into a tour – the Barrens, then Stonetalon, then Ashenvale. Gatherline rides the laps of one, and Shortest Path Forever takes you to the next.</p>
+    <p class="foot">Laps on each route · start over at the end · flights, boats and portals in between</p>
+  </div>
+  <div class="right" style="flex-direction: column; gap: 14px; align-items: stretch; padding: 50px 20px 40px 30px;">
+    <div class="rcard"><div class="strip" style="background: var(--jade)"></div>
+      <div class="top"><b style="font-family: Grotesk; font-size: 16px; color: var(--ink); flex:1;">Kalimdor ore run</b><span class="go">Stop</span></div>
+      <div class="info"><span>The Barrens <span class="acc">→</span> Stonetalon Mountains <span class="acc">→</span> Ashenvale</span></div>
+      <div class="info"><span class="acc">The Barrens - Copper and Tin: stop 7/42, lap 2/2, tour 1/3</span></div>
+    </div>
+    <div class="chat" style="background: rgba(6,8,10,.75); padding: 14px 16px; border: 1px solid #23262c;">
+      <span class="gl">Gatherline</span>: The Barrens - Copper and Tin done: 2 laps in 12:40.<br>
+      <span class="gl">Gatherline</span>: on to <span style="color:#ffd34d">Stonetalon - Tin and Silver</span> (2 of 3).
+    </div>
+    <div class="rcard"><div class="strip" style="background: #e8964a"></div>
+      <div class="top"><b style="font-family: Grotesk; font-size: 16px; color: var(--ink); flex:1;">Elwynn and Westfall herbs</b><span class="go">Start</span></div>
+      <div class="info"><span>2 routes <span class="dot">•</span> 1 lap each <span class="dot">•</span> about 14:20 riding <span class="dot">•</span> starts over</span></div>
     </div>
   </div>
 </div></section>

@@ -145,11 +145,13 @@ end
 -- Whether the stop at position p is empty: it has nodes, and you gathered
 -- every one of them within the last db.navRespawn minutes
 local function Empty(p)
-    local minutes = GP.db.navRespawn or 0
-    if minutes <= 0 or p >= nav.last then return false end
+    if p >= nav.last then return false end
     local m = nav.members and nav.members[Index(p)]
     if not m or #m == 0 then return false end
-    local now, seconds, mapID = GetTime(), minutes * 60, nav.route.mapID
+    local mapID = nav.route.mapID
+    local seconds = GP:SkipSeconds(mapID, nav.kindAt and nav.kindAt[Index(p)])
+    if seconds <= 0 then return false end
+    local now = GetTime()
     for k = 1, #m, 2 do
         if not GP:WasHarvested(mapID, m[k], m[k + 1], seconds, now) then return false end
     end
@@ -238,6 +240,14 @@ end
 -- is timed from reaching its first stop to reaching the next lap's first one.
 local function NoteLap(p)
     if not nav.lapBegan and p >= 2 then nav.lapBegan = GetTime() end
+    -- the stops passed since last time: reached (for "found empty")
+    local from = (nav.reached or 0) + 1
+    if p - 1 > (nav.reached or 0) then
+        for q = max(from, p - 1 - GP.NAV_CATCH_AHEAD), p - 1 do
+            if not nav.skipped[q] and nav.members then GP:StopReached(nav.route, nav.members[Index(q)]) end
+        end
+        nav.reached = p - 1
+    end
     local lap = Lap(max(1, p - 1))
     if lap > (nav.lap or 1) then
         local now = GetTime()

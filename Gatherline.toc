@@ -20,6 +20,7 @@ Core.lua
 Sources.lua
 Session.lua
 Share.lua
+Sync.lua
 Skills_Data.lua
 Skills.lua
 Tours.lua

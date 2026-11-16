@@ -51,7 +51,9 @@ GP.DEFAULTS = {
     navLaps = 0,           -- laps Start rides a route (0 = until you stop it)
     navReach = 30,         -- yards from a stop at which a ride moves on to the next
     navAhead = 10,         -- stops handed to Shortest Path at once (its numbered pins)
-    navRespawn = 5,        -- minutes a gathered node counts as gone: stops with only such nodes are skipped (0 = never)
+    navRespawn = 5,
+    navLearn = true,       -- smart laps use the regrowth times seen in each zone (never longer than navRespawn)
+    syncGroup = true,      -- tell your group (Gatherline users) what you gather, and hear theirs        -- minutes a gathered node counts as gone: stops with only such nodes are skipped (0 = never)
     navLabel = "both",     -- what a stop is called: "number" (Wegpunkt 3/42), "nodes" (what's there), "both"
     onlyGatherable = false,   -- New route lists only the nodes your Herbalism / Mining can gather
     walkRoutes = true,     -- work routes out with walks over the ground (Shortest Path's walking maps)
@@ -2258,6 +2260,7 @@ local function Help()
     print("  |cffffd100/gl hud|r [compass|lens|card|preview]  " .. L["the gathering HUD: all, one part, or a preview"])
     print("  |cffffd100/gl tour|r [name]  " .. L["ride a tour (several routes, zone to zone)"])
     print("  |cffffd100/gl skill|r  " .. L["where to skill up your Herbalism and Mining"])
+    print("  |cffffd100/gl regrowth|r  " .. L["how soon nodes grew back, per zone (learnt)"])
     print("  |cffffd100/gl stats all|r  " .. L["all your routes, the one that brings the most first"])
     print("  |cffffd100/gl share|r, |cffffd100/gl import|r  " .. L["share the route shown in your zone / add one a friend shared"])
     print("  |cffffd100/gl walk|r  " .. L["test: yards on foot from you to the next stops"])
@@ -2328,6 +2331,23 @@ SlashCmdList.GATHERLINE = function(msg)
                 Print(L["%s has no laps yet. Ride it with Start; each lap counts."]:format(route.name))
             end
         end
+    elseif cmd == "regrowth" or cmd == "respawn" then
+        local any = false
+        local list = {}
+        for mapID, kinds in pairs(type(GP.db.respawn) == "table" and GP.db.respawn or {}) do
+            for kind in pairs(kinds) do
+                local secs, n = GP:LearntRespawn(mapID, kind)
+                list[#list + 1] = { GP:MapName(mapID), GP:KindName(kind), secs, n }
+            end
+        end
+        table.sort(list, function(a, b) return a[1] .. a[2] < b[1] .. b[2] end)
+        Print(L["regrowth seen (the smart laps use it when they've seen it 3 times):"])
+        for _, e in ipairs(list) do
+            any = true
+            print(("  |cffffd100%s|r, %s: %s"):format(e[1], e[2], e[3] and L["%s (seen %d times)"]:format(GP.FormatClock(e[3]), e[4])
+                or L["seen %d times so far"]:format(e[4])))
+        end
+        if not any then print("  " .. L["nothing yet: it's learnt when you or your group gather a node again."]) end
     elseif cmd == "share" then
         local route = GP:NavRoute() or GP:NavCandidate()
         if route then GP:ShareWindow(route) else Print(L["no route shown in your zone."]) end

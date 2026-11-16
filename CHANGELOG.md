@@ -1,5 +1,18 @@
 # Gatherline
 
+## v1.9.0
+
+- **Gather with your group:** Gatherline users in a group tell each other what they gather, so
+  the smart laps also skip a stop your friend just picked clean. Routes can be sent straight to
+  your group or a player from *Share*; they're asked whether to add it. *Guidance → Smart laps →
+  Gather with my group* (on to start with).
+- **Regrowth learnt:** Gatherline notes how soon a node you or your group gathered was there to
+  gather again, per zone, and the smart laps skip a stop no longer than that – never longer
+  than the minutes you set. `/gl regrowth` shows what it has learnt.
+- **Found empty:** a stop you reach with nodes no one in your group gathered lately, where you
+  gather nothing, counts as found empty – someone else was there first. The route's statistics
+  show it (*35 % found empty*) once five stops were reached, so you see which routes are crowded.
+
 ## v1.8.0
 
 - **Ready-made no-go areas** on the *No-go areas* page, under your own:

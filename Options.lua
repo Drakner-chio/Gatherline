@@ -1408,7 +1408,7 @@ local function BuildRiding(p)
     refs.joinSwitch = Setting(card4, "Line to the route", 12, -60, "joinLine",
         "A dashed line on the minimap from you to the nearest point of a route showing in your zone, so you know where to join it. Gone once you're on the route.")
 
-    local card5 = Card(p, "Smart laps", 0, -316, PAGE_W, 90)
+    local card5 = Card(p, "Smart laps", 0, -316, PAGE_W, 128)
     refs.navRespawn = T.Slider(card5, "Skip gathered stops for", 12, -30, 244,
         function() return GP.db.navRespawn end,
         function(v) GP.db.navRespawn = v end,
@@ -1416,7 +1416,11 @@ local function BuildRiding(p)
     T.Tooltip(refs.navRespawn, "Skip gathered stops for",
         "When you gather a node, Gatherline notes where. A stop whose nodes you all gathered within this many minutes is left out of the next laps, until they can be back. Nodes someone else took aren't known, so those stops stay in.")
     AddRefresher(refs.navRespawn.Refresh)
-    T.Note(card5, "Each lap counts towards the route's statistics: best and average lap, nodes an hour, and with Auctionator what it's worth an hour. /gl stats shows them.", COL2, -30, PAGE_W - COL2 - 12)
+    refs.navLearn = Setting(card5, "Learn regrowth times", 12, -84, "navLearn",
+        "Gatherline notes how soon a node you (or your group) gathered was there to gather again, per zone, and skips stops no longer than that. Never longer than the minutes above. /gl regrowth shows what it has learnt.")
+    refs.syncGroup = Setting(card5, "Gather with my group", COL2, -36, "syncGroup",
+        "Gatherline users in your group tell each other what they gather: the laps then skip a stop your friend just picked clean too. Routes can be sent to them from Share.")
+    T.Note(card5, "Each lap counts for the route's statistics; /gl stats shows them.", COL2, -72, PAGE_W - COL2 - 12)
 end
 
 ---------------------------------------------------------------------------

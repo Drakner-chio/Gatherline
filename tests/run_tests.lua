@@ -788,7 +788,7 @@ for _, k in ipairs(GP.DISPLAY_KEYS) do
 end
 local listed = {}
 for _, k in ipairs(GP.DISPLAY_KEYS) do listed[k] = true end
-local notOnTab = { minimapAngle = true, sight = true, nextColor = true, tabooShow = true, navLaps = true, walkRoutes = true, navReach = true, navAhead = true, navLabel = true, navRespawn = true, onlyGatherable = true }
+local notOnTab = { minimapAngle = true, sight = true, nextColor = true, tabooShow = true, navLaps = true, walkRoutes = true, navReach = true, navAhead = true, navLabel = true, navRespawn = true, onlyGatherable = true, navLearn = true, syncGroup = true }
 for k in pairs(GP.DEFAULTS) do
     check(listed[k] or notOnTab[k], k .. ": every setting on the tab is restored")
 end
@@ -2249,6 +2249,105 @@ do
     for k in pairs(GP.noGoOutlines) do GP.noGoOutlines[k] = nil end
     GP:NoGoChanged()
     GP:OpenConfig("routes")
+end
+
+STEP("gathering together: regrowth, found empty, the group")
+do
+    GP.harvests, GP.visits = {}, {}
+    GP.db.respawn = nil
+    -- regrowth learnt from gathering the same node again
+    local t = FAKE_TIME
+    GP:RecordHarvest(E, 0.5, 0.5, t, "Herb Gathering")
+    GP:RecordHarvest(E, 0.5, 0.5, t + 400, "Herb Gathering")
+    GP:RecordHarvest(E, 0.5, 0.5, t + 700, "Herb Gathering")
+    GP:RecordHarvest(E, 0.5, 0.5, t + 1000, "Herb Gathering")
+    GP:RecordHarvest(E, 0.3, 0.3, t + 1001, "Mining")
+    local secs, n = GP:LearntRespawn(E, "Herb Gathering")
+    check(secs == 300 and n == 3, "three times seen, the lowest fifth: " .. tostring(secs) .. ", " .. tostring(n))
+    check(GP:LearntRespawn(E, "Mining") == nil, "mining: not seen again yet")
+    GP.db.navRespawn, GP.db.navLearn = 10, true
+    check(GP:SkipSeconds(E, "Herb Gathering") == 300 and GP:SkipSeconds(E, "Mining") == 600, "laps use it, never longer than set")
+    GP.db.navRespawn = 3
+    check(GP:SkipSeconds(E, "Herb Gathering") == 180, "or shorter than set: what's set")
+    GP.db.navLearn = false
+    GP.db.navRespawn = 10
+    check(GP:SkipSeconds(E, "Herb Gathering") == 600, "learning off: what's set")
+    GP.db.navLearn, GP.db.navRespawn = true, 5
+    SlashCmdList.GATHERLINE("regrowth")
+    check(logHas("5:00 (seen 3 times)"), "/gl regrowth")
+
+    -- found empty: a stop reached with nothing gathered there in time
+    local route
+    for _, rr in ipairs(GP.db.routes) do if rr.mapID == E and GP:NodeCount(rr) >= 3 then route = rr break end end
+    route.stats = nil
+    GP.harvests, GP.visits = {}, {}
+    local m = { 0.61, 0.61, 0.62, 0.62 }
+    GP:StopReached(route, m)
+    GP:RecordHarvest(E, 0.611, 0.611, FAKE_TIME, "Herb Gathering")
+    GP:SettleVisits(FAKE_TIME + 1)
+    check(route.stats.visits == 1 and route.stats.empty == 0, "gathered there: found")
+    for i = 1, 4 do GP:StopReached(route, { 0.2 + i / 100, 0.2, 0.21 + i / 100, 0.21 }) end
+    GP:SettleVisits(FAKE_TIME + 100)
+    check(route.stats.visits == 5 and route.stats.empty == 4, "four found empty")
+    check(GP:StatsLine(route) == nil or true, "")
+    route.stats.laps, route.stats.lapTime, route.stats.best = 1, 300, 300
+    check(GP:StatsLine(route):find("80% found empty", 1, true), "in the statistics: " .. GP:StatsLine(route))
+    -- a stop you (or your group) gathered lately isn't a surprise when empty
+    GP:StopReached(route, { 0.611, 0.611 })
+    check(#GP.visits == 0, "gathered lately: not counted")
+    route.stats = nil
+
+    -- the group: what you gather is told, what they gather is heard
+    local sent = {}
+    local oldChat, oldGroup, oldName = C_ChatInfo, IsInGroup, UnitName
+    C_ChatInfo = { SendAddonMessage = function(prefix, msg, channel, target) sent[#sent + 1] = { prefix, msg, channel, target } end,
+        RegisterAddonMessagePrefix = function() end }
+    IsInGroup = function() return true end
+    UnitName = function() return "Alex" end
+    GP:RecordHarvest(E, 0.25, 0.75, nil, "Mining")
+    check(#sent == 1 and sent[1][1] == "Gatherline" and sent[1][2] == "H1:" .. E .. ":2500:7500:m" and sent[1][3] == "PARTY", "told: " .. tostring(sent[1] and sent[1][2]))
+    GP.db.syncGroup = false
+    GP:RecordHarvest(E, 0.25, 0.75, nil, "Mining")
+    check(#sent == 1, "not when switched off")
+    GP.db.syncGroup = true
+    GP.harvests = {}
+    local onEvent = GP.syncFrame:GetScript("OnEvent")
+    onEvent(GP.syncFrame, "CHAT_MSG_ADDON", "Gatherline", "H1:" .. E .. ":4000:4000:h", "PARTY", "Bob-Realm")
+    check(#GP.harvests == 1 and GP.harvests[1][6] == "Bob" and GP:WasHarvested(E, 0.4, 0.4, 60), "heard Bob's: the stop counts as gathered")
+    onEvent(GP.syncFrame, "CHAT_MSG_ADDON", "Gatherline", "H1:" .. E .. ":4000:4000:h", "PARTY", "Alex-Realm")
+    check(#GP.harvests == 1, "your own message comes back: left alone")
+    -- a route to the group, in parts, put back together and offered
+    GP.SYNC_PART = 50
+    local was = C_Timer
+    C_Timer = nil
+    sent = {}
+    local line = GP:ExportRoute(route)
+    GP:SendRoute(route)
+    check(#sent == math.ceil(#line / 50) and sent[1][2]:find("^R1:%d+:1:") and sent[1][3] == "PARTY", "sent in " .. #sent .. " parts")
+    local before = #GP.db.routes
+    for i = #sent, 1, -1 do onEvent(GP.syncFrame, "CHAT_MSG_ADDON", "Gatherline", sent[i][2], "PARTY", "Bob") end
+    check(GP.confirmWindow:IsShown() and GP.confirmWindow.text:GetText():find("Bob", 1, true), "asked whether to add Bob's route")
+    Click(GP.confirmWindow.yes)
+    check(#GP.db.routes == before + 1, "added")
+    GP:DeleteRoute(GP.db.routes[#GP.db.routes])
+    -- the Share window: to the group, to a player
+    sent = {}
+    GP:ShareWindow(route)
+    Click(GP.shareWindow.toGroup)
+    check(#sent > 0 and sent[1][3] == "PARTY", "Send to my group")
+    sent = {}
+    GP.shareWindow.who:SetText("Bob")
+    Click(GP.shareWindow.toWho)
+    check(#sent > 0 and sent[1][3] == "WHISPER" and sent[1][4] == "Bob", "Send to player")
+    IsInGroup = function() return false end
+    sent = {}
+    Click(GP.shareWindow.toGroup)
+    check(#sent == 0 and logHas("not in a group"), "no group: says so")
+    GP.shareWindow:Hide()
+    C_Timer, C_ChatInfo, IsInGroup, UnitName = was, oldChat, oldGroup, oldName
+    GP.SYNC_PART = 200
+    GP.harvests, GP.visits = {}, {}
+    GP.db.respawn = nil
 end
 
 STEP("without GatherMate2")

@@ -214,7 +214,7 @@ function GP:ShareWindow(route)
     local f = self.shareWindow
     if not f then
         f = CreateFrame("Frame", "GatherlineShare", UIParent)
-        f:SetSize(460, 150)
+        f:SetSize(460, 186)
         f:SetPoint("CENTER", 0, 80)
         f:SetFrameStrata("FULLSCREEN_DIALOG")
         f:SetToplevel(true)
@@ -236,6 +236,20 @@ function GP:ShareWindow(route)
         f.close = T.FlatButton(f, "Close", 100)
         f.close:SetPoint("BOTTOMRIGHT", -16, 14)
         f.close:SetScript("OnClick", function() f:Hide() end)
+        -- send it straight to your group, or to one player
+        f.toGroup = T.FlatButton(f, "Send to my group", 150)
+        f.toGroup:SetPoint("TOPLEFT", 16, -110)
+        f.toGroup:SetScript("OnClick", function() if f.route then GP:SendRoute(f.route) end end)
+        f.who = T.EditBox(f, 140)
+        f.who:SetPoint("LEFT", f.toGroup, "RIGHT", 12, 0)
+        f.toWho = T.FlatButton(f, "Send to player", 120)
+        f.toWho:SetPoint("LEFT", f.who, "RIGHT", 8, 0)
+        local function ToWho()
+            local name = (f.who:GetText() or ""):match("^%s*(.-)%s*$")
+            if f.route and name ~= "" then GP:SendRoute(f.route, name) end
+        end
+        f.toWho:SetScript("OnClick", ToWho)
+        f.who:SetScript("OnEnterPressed", ToWho)
         f.go = T.FlatButton(f, "Import", 120)
         f.go:SetPoint("RIGHT", f.close, "LEFT", -8, 0)
         f.go:SetPrimary(true)
@@ -246,9 +260,12 @@ function GP:ShareWindow(route)
     end
     if route then
         local line = self:ExportRoute(route)
-        f.mode, f.line = "share", line
+        f.mode, f.line, f.route = "share", line, route
+        f.toGroup:Show(); f.who:Show(); f.toWho:Show()
+        local target = UnitIsPlayer and UnitIsPlayer("target") and UnitName("target")
+        if target and f.who.SetText then f.who:SetText(target) end
         f.title:SetText(L["Share %s"]:format(route.name))
-        f.text:SetText(L["Copy this line (Ctrl+C) and send it to a friend. In Gatherline they click Import and paste it."])
+        f.text:SetText(L["Copy this line (Ctrl+C) and send it to a friend; in Gatherline they click Import and paste it. Or send it straight to your group or a player (they need Gatherline)."])
         f.box:SetText(line)
         f.box:SetScript("OnTextChanged", function(self, user) if user then self:SetText(f.line); self:HighlightText() end end)
         f.box:SetScript("OnEnterPressed", function() f:Hide() end)
@@ -257,7 +274,8 @@ function GP:ShareWindow(route)
         f.box:SetFocus()
         f.box:HighlightText()
     else
-        f.mode, f.line = "import", nil
+        f.mode, f.line, f.route = "import", nil, nil
+        f.toGroup:Hide(); f.who:Hide(); f.toWho:Hide()
         f.title:SetText(L["Import a route"])
         f.text:SetText(L["Paste a route a friend shared (Ctrl+V), then click Import."])
         f.box:SetScript("OnTextChanged", nil)

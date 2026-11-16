@@ -1957,6 +1957,7 @@ end
 
 STEP("the gathering HUD")
 do
+    GP.HUD_LENS_EVERY, GP.HUD_CARD_EVERY, GP.HUD_STATE_EVERY = 0, 0, 0   -- (time stands still here)
     -- which way things are from you
     local w, h = GP:MapYards(E)
     local function Rel(dx, dy, f) return GP.HudRelative(E, 0.5, 0.5, 0.5 + dx / w, 0.5 + dy / h, f) end
@@ -2213,6 +2214,7 @@ do
     GP.FAKE_FACTION = "Alliance"
     check(not GP:NoGoAreas(W)[1].on and select(2, GP:NoGoAuto(GP:NoGoAreas(W)[1].area)) == "friendly", "Alliance: Sentinel Hill is yours")
     GP.FAKE_FACTION = "Horde"
+    GP:NoGoChanged()   -- (in the game: your level going up does this)
     -- the polys reach the solver: a node inside Sentinel Hill counts as in a no-go area
     local town = GP:NoGoAreas(W)[1].area.polys[1]
     local cx, cy = 0, 0

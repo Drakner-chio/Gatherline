@@ -440,8 +440,20 @@ end
 --   states = { "done" | "skipped" | "current" | "empty" | "todo" } (one per stop of the lap),
 --   skipped (this lap) }
 GP.HUD_AHEAD = 8
+GP.HUD_STATE_EVERY = 0.25   -- seconds the HUD's view of the ride is kept (only the lap time moves on)
 function GP:HudState()
     if not nav then return nil end
+    local now = GetTime()
+    local c = nav.hudState
+    if c and c.pos == nav.pos and now - c.at < GP.HUD_STATE_EVERY then
+        c.s.elapsed = nav.lapBegan and (now - nav.lapBegan) or nil
+        return c.s
+    end
+    local s = self:HudStateNow()
+    nav.hudState = { pos = nav.pos, at = now, s = s }
+    return s
+end
+function GP:HudStateNow()
     local p = nav.pos or 1
     local lap = Lap(p)
     local s = { route = nav.route, mapID = nav.route.mapID, n = nav.n, lap = lap, laps = nav.laps,

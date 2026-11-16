@@ -112,6 +112,7 @@ function GP:LearnRespawn(mapID, x, y, t, kind)
                     z[kind] = list
                     list[#list + 1] = floor(took + 0.5)
                     while #list > self.RESPAWN_SAMPLES do table.remove(list, 1) end
+                    self.learntCache = nil
                 end
                 return
             end
@@ -123,6 +124,17 @@ end
 -- percentile of the times seen), and how many times it was seen; nil if
 -- fewer than RESPAWN_MIN_SAMPLES
 function GP:LearntRespawn(mapID, kind)
+    -- kept until something new is seen (the laps ask often)
+    self.learntCache = self.learntCache or {}
+    local ck = tostring(mapID) .. ":" .. tostring(kind)
+    local hit = self.learntCache[ck]
+    if hit then return hit[1], hit[2] end
+    local a, b = self:LearntRespawnNow(mapID, kind)
+    self.learntCache[ck] = { a, b }
+    return a, b
+end
+
+function GP:LearntRespawnNow(mapID, kind)
     local z = type(self.db.respawn) == "table" and self.db.respawn[mapID]
     local list = z and kind and z[kind]
     if type(list) ~= "table" or #list < self.RESPAWN_MIN_SAMPLES then return nil, list and #list or 0 end
@@ -358,6 +370,14 @@ end)
 ---------------------------------------------------------------------------
 function GP:FreeBagSlots()
     if self.FAKE_FREE then return self.FAKE_FREE end
+    -- (asked by the HUD many times a second: counted once a second, or when bags change)
+    local now = GetTime()
+    if self.bagCount and now - self.bagCountAt < 1 then return self.bagCount end
+    self.bagCount, self.bagCountAt = self:CountFreeBagSlots(), now
+    return self.bagCount
+end
+
+function GP:CountFreeBagSlots()
     local C = _G.C_Container
     local get = C and C.GetContainerNumFreeSlots or _G.GetContainerNumFreeSlots
     if not get then return nil end
@@ -392,5 +412,5 @@ end
 local bags = CreateFrame("Frame")
 pcall(bags.RegisterEvent, bags, "BAG_UPDATE_DELAYED")
 pcall(bags.RegisterEvent, bags, "BAG_UPDATE")
-bags:SetScript("OnEvent", function() if GP.db then GP:CheckBags() end end)
+bags:SetScript("OnEvent", function() GP.bagCount = nil; if GP.db then GP:CheckBags() end end)
 GP.bagFrame = bags

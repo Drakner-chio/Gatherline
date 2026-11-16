@@ -39,6 +39,8 @@ GP.HUD_PLACES = {
     track = { "BOTTOM", 250, 120 },
 }
 GP.HUD_TICK = 0.04
+GP.HUD_LENS_EVERY = 0.08
+GP.HUD_CARD_EVERY = 0.2
 
 -- Colours of what's at a stop
 local KIND_COLOR = {
@@ -157,6 +159,7 @@ end
 
 -- A HUD part: a frame placed by its saved point, dragged while unlocked
 local parts = {}
+local drawnAt = {}   -- when the lens and the card were last drawn
 local function Part(key, w, h, kind, name, template)
     local f = CreateFrame(kind or "Frame", name or ("GatherlineHud_" .. key), UIParent, template)
     f:SetSize(w, h)
@@ -755,7 +758,7 @@ end
 function GP:UpdateHud(force)
     Build()
     for _, f in pairs(parts) do Place(f) end
-    if force then self.hudLast = nil end
+    if force then self.hudLast = nil; for k in pairs(drawnAt) do drawnAt[k] = nil end end
 end
 
 local function Tick()
@@ -791,9 +794,14 @@ local function Tick()
             end
         elseif want then
             if not f:IsShown() then f:Show() end
+            -- the band every tick (it turns with you); the lens and card a little less often
+            local now = GetTime()
             if key == "compass" then UpdateCompass(f, s, px, py, facing)
-            elseif key == "lens" then UpdateLens(f, s, px, py, facing)
-            else UpdateCard(f, s, px, py) end
+            elseif key == "lens" then
+                if not drawnAt[key] or now - drawnAt[key] >= GP.HUD_LENS_EVERY then drawnAt[key] = now; UpdateLens(f, s, px, py, facing) end
+            elseif not drawnAt[key] or now - drawnAt[key] >= GP.HUD_CARD_EVERY then
+                drawnAt[key] = now; UpdateCard(f, s, px, py)
+            end
         elseif f:IsShown() then
             f:Hide()
         end

@@ -142,7 +142,11 @@ end
 
 -- The ready-made areas of a zone, each with on (keeps routes out now), auto
 -- (what it'd be left alone) and by hand (true, false or nil)
+local areaCache = {}
 function GP:NoGoAreas(mapID)
+    local key = (self.tabooVersion or 0) .. ":" .. tostring(Level()) .. ":" .. tostring(Faction())
+    local c = areaCache[mapID]
+    if c and c.key == key then return c.list end
     local n = self:NoGoSettings()
     local list = {}
     for _, a in ipairs(Outlines(mapID)) do
@@ -153,17 +157,23 @@ function GP:NoGoAreas(mapID)
         if n.zones[mapID] then on = false end
         list[#list + 1] = { area = a, on = on, auto = auto, why = why, hand = hand }
     end
+    areaCache[mapID] = { key = key, list = list }
     return list
 end
 
 -- The outlines (map positions) of the ready-made areas on now in a zone
+local polyCache = {}
 function GP:NoGoPolys(mapID)
+    local list = self:NoGoAreas(mapID)
+    local c = polyCache[mapID]
+    if c and c.list == list then return c.out end
     local out = {}
     for _, e in ipairs(self:NoGoAreas(mapID)) do
         if e.on then
             for _, poly in ipairs(e.area.polys) do out[#out + 1] = poly end
         end
     end
+    polyCache[mapID] = { list = list, out = out }
     return out
 end
 

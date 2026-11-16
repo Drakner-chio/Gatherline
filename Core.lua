@@ -15,6 +15,7 @@ ns.GP = GP
 Gatherline = GP
 
 local sqrt, max, min, floor, cos, sin = math.sqrt, math.max, math.min, math.floor, math.cos, math.sin
+local huge = math.huge
 
 local function Print(msg) print(T.CHAT_PREFIX .. ": " .. msg) end
 GP.Print = Print
@@ -495,39 +496,122 @@ function GP:Taboos(mapID)
     return self.db.taboos[mapID] or {}
 end
 
--- The taboo areas of a map as walls for the solver (yards), or nil if none.
--- Kept until an area changes.
-local wallCache = {}
+-- The no-go areas of a map in yards, yours and the ready-made ones on now
+-- (NoGo.lua): { { xy = flat yards, box = { x1, y1, x2, y2 }, ready = bool } },
+-- kept until an area or a switch changes. Cheap: for "is this node inside one".
+local polyCache = {}
 GP.tabooVersion = 0
-local function WallsFor(mapID)
-    -- your own areas, and the ready-made ones on now (NoGo.lua)
-    local list = {}
-    for _, xy in ipairs(GP.db.taboos[mapID] or {}) do list[#list + 1] = xy end
-    if GP.NoGoPolys then
-        for _, xy in ipairs(GP:NoGoPolys(mapID)) do list[#list + 1] = xy end
-    end
-    if #list == 0 then return nil end
-    local c = wallCache[mapID]
-    if c and c.version == GP.tabooVersion then return c.walls end
+local function PolysFor(mapID)
+    local c = polyCache[mapID]
+    if c and c.version == GP.tabooVersion then return c.list end
     local w, h = Yards(mapID)
-    local polys = {}
-    for i, xy in ipairs(list) do
-        local p = {}
-        for k = 1, #xy, 2 do p[k], p[k + 1] = xy[k] * w, xy[k + 1] * h end
-        polys[i] = p
+    local list = {}
+    local function Add(xy, ready)
+        local p, x1, y1, x2, y2 = {}, huge, huge, -huge, -huge
+        for k = 1, #xy, 2 do
+            local x, y = xy[k] * w, xy[k + 1] * h
+            p[k], p[k + 1] = x, y
+            x1, x2, y1, y2 = min(x1, x), max(x2, x), min(y1, y), max(y2, y)
+        end
+        list[#list + 1] = { xy = p, box = { x1, y1, x2, y2 }, ready = ready }
     end
-    local walls = O.Walls(polys)
-    wallCache[mapID] = { version = GP.tabooVersion, walls = walls }
+    for _, xy in ipairs(GP.db.taboos[mapID] or {}) do Add(xy, false) end
+    if GP.NoGoPolys then
+        for _, xy in ipairs(GP:NoGoPolys(mapID)) do Add(xy, true) end
+    end
+    polyCache[mapID] = { version = GP.tabooVersion, list = list }
+    return list
+end
+
+local function InPolygon(xy, x, y)
+    local inside, n = false, #xy / 2
+    local j = n
+    for i = 1, n do
+        local xi, yi, xj, yj = xy[2 * i - 1], xy[2 * i], xy[2 * j - 1], xy[2 * j]
+        if (yi > y) ~= (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi then inside = not inside end
+        j = i
+    end
+    return inside
+end
+
+-- Is this point (yards) in any no-go area of the map?
+local function InsideAny(mapID, x, y)
+    for _, p in ipairs(PolysFor(mapID)) do
+        local b = p.box
+        if x >= b[1] and x <= b[3] and y >= b[2] and y <= b[4] and InPolygon(p.xy, x, y) then return true end
+    end
+    return false
+end
+GP.InsideAnyTaboo = InsideAny
+
+-- A ready-made area as a wall: its convex hull, at most 10 corners (walls cost
+-- the solver a lot per corner; your own areas stay as you drew them)
+local function Hull(xy)
+    local pts = {}
+    for k = 1, #xy, 2 do pts[#pts + 1] = { xy[k], xy[k + 1] } end
+    table.sort(pts, function(a, b) return a[1] < b[1] or (a[1] == b[1] and a[2] < b[2]) end)
+    local function cross(o, a, b) return (a[1] - o[1]) * (b[2] - o[2]) - (a[2] - o[2]) * (b[1] - o[1]) end
+    local lower, upper = {}, {}
+    for _, p in ipairs(pts) do
+        while #lower >= 2 and cross(lower[#lower - 1], lower[#lower], p) <= 0 do table.remove(lower) end
+        lower[#lower + 1] = p
+    end
+    for i = #pts, 1, -1 do
+        local p = pts[i]
+        while #upper >= 2 and cross(upper[#upper - 1], upper[#upper], p) <= 0 do table.remove(upper) end
+        upper[#upper + 1] = p
+    end
+    table.remove(lower); table.remove(upper)
+    local hull = {}
+    for _, p in ipairs(lower) do hull[#hull + 1] = p end
+    for _, p in ipairs(upper) do hull[#hull + 1] = p end
+    local step = math.max(1, #hull / 10)
+    local out = {}
+    for i = 1, #hull, step do
+        local p = hull[floor(i)]
+        out[#out + 1], out[#out + 2] = p[1], p[2]
+    end
+    return out
+end
+
+-- The no-go areas as walls for the solver (yards), or nil if none. Only the
+-- ready-made areas near the given box (yards: the nodes a route is made of)
+-- are walls: one far away can't be in the way, and every wall costs.
+local wallCache = {}
+local WALL_NEAR = 80
+local function WallsFor(mapID, box)
+    local key = GP.tabooVersion .. ":" .. (box and ("%d:%d:%d:%d"):format(box[1], box[2], box[3], box[4]) or "-")
+    local c = wallCache[mapID]
+    if c and c.key == key then return c.walls end
+    local polys = {}
+    for _, p in ipairs(PolysFor(mapID)) do
+        if not p.ready then
+            polys[#polys + 1] = p.xy
+        elseif box and not (p.box[3] < box[1] - WALL_NEAR or p.box[1] > box[3] + WALL_NEAR
+            or p.box[4] < box[2] - WALL_NEAR or p.box[2] > box[4] + WALL_NEAR) then
+            polys[#polys + 1] = Hull(p.xy)
+        end
+    end
+    local walls = #polys > 0 and O.Walls(polys) or nil
+    wallCache[mapID] = { key = key, walls = walls }
     return walls
 end
 GP.WallsFor = WallsFor
 
+-- The box round some points (yards)
+local function BoxOf(pts)
+    local x1, y1, x2, y2 = huge, huge, -huge, -huge
+    for _, p in ipairs(pts) do
+        x1, x2, y1, y2 = min(x1, p[1]), max(x2, p[1]), min(y1, p[2]), max(y2, p[2])
+    end
+    if x1 == huge then return nil end
+    return { floor(x1), floor(y1), floor(x2) + 1, floor(y2) + 1 }
+end
+
 -- Is this map position inside one of the map's taboo areas?
 function GP:InTaboo(mapID, x, y)
-    local walls = WallsFor(mapID)
-    if not walls then return false end
     local w, h = Yards(mapID)
-    return walls:Inside({ x * w, y * h })
+    return InsideAny(mapID, x * w, y * h)
 end
 
 -- Adds a taboo area (flat list of 3 or more corners, map positions). Turned
@@ -912,12 +996,12 @@ end
 local function Build(route)
     local raw = GP:CollectNodes(route.mapID, route.kinds)
     local w, h = Yards(route.mapID)
-    local walls = WallsFor(route.mapID)
     local pts = {}
     for _, p in ipairs(raw) do
         local q = { p[1] * w, p[2] * h }
-        if not (walls and walls:Inside(q)) then pts[#pts + 1] = q end   -- none from inside a taboo area
+        if not InsideAny(route.mapID, q[1], q[2]) then pts[#pts + 1] = q end   -- none from inside a taboo area
     end
+    local walls = WallsFor(route.mapID, BoxOf(pts))
     O.SetWalls(walls)
     local radius = route.sight or 0
     local spots = O.GroupFor(pts, radius)
@@ -1269,8 +1353,8 @@ end
 function GP:AddNode(mapID, kind, x, y, name)
     if not self.db.autoAdd or self:IsSkipped(name) then return 0 end
     local w, h = Yards(mapID)
-    local walls = WallsFor(mapID)
-    if walls and walls:Inside({ x * w, y * h }) then return 0 end   -- in a taboo area
+    if InsideAny(mapID, x * w, y * h) then return 0 end   -- in a taboo area
+    local walls = WallsFor(mapID, { floor(x * w) - 300, floor(y * h) - 300, floor(x * w) + 300, floor(y * h) + 300 })
     local added = 0
     for _, route in ipairs(self:RoutesOn(mapID)) do
         if not route.working and route.kinds[kind] and route.kinds[kind][name] then
@@ -1322,7 +1406,7 @@ end
 -- only pass near their nodes)
 function GP:RemoveNode(mapID, kind, x, y, name)
     local w, h = Yards(mapID)
-    local walls = WallsFor(mapID)
+    local walls = WallsFor(mapID, { floor(x * w) - 300, floor(y * h) - 300, floor(x * w) + 300, floor(y * h) + 300 })
     local removed = 0
     for _, route in ipairs(self:RoutesOn(mapID)) do
         if not route.working and route.kinds[kind] and route.kinds[kind][name]

@@ -125,6 +125,11 @@ Gathering routes for **World of Warcraft: Forever** (interface 16001): the short
 - 0.4.1: `GP:ReverseRoute(route)` reverses `points` and `drawn` (`GP.ReversePairs`), restarts a ride on it (`StopNav(true)`, `StartNav`). Routes row: name box 136, a 24 x 20 button with `UI-RefreshButton` after Start (`refs.turnButtons`). `/gl reverse`.
 - 0.5.0: Riding tab (`BuildRiding`, 5th sidebar tab): `db.navReach` (15-150, 30; `CatchUp` moves on when within it of the stop you head for, later stops within max(navReach, NAV_CATCH)), `db.navAhead` (2-25, 10; `GP.NAV_AHEAD` overrides it when set, for tests), `db.navLaps`, `db.navLabel` ("number"|"nodes"|"both", checked in LoadSettings). `GP:StopLabels(route)`: each node of the route's kinds (not skipped, not in a taboo area) counts for its nearest stop within sight + 40 yards; "Name ×k" by count, `NAV_LABEL_NAMES` (3) names then "+N". Worked out once at `StartNav` (`nav.labels`, by route stop index). `GP:StopTitle(k, n, what)`; k counts from the joining stop. In "number" style the nodes go in the stop's tooltip. Tick every 0.25 s.
 
+## CurseForge relations
+
+`.pkgmeta` lists them (`required-dependencies`: shortest-path-forever; `optional-dependencies`: gathermate2,
+gatherlite, auctionator), and the packager sets them on every file it uploads – nothing to do by hand.
+
 ## Keeping the walking search in step with Shortest Path Forever
 
 `Routing/` is a copy of Shortest Path Forever's `Routing/PathGrid.lua`, `Path.lua` and `PathJobs.lua`

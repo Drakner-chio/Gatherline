@@ -6,6 +6,14 @@ manual-changelog:
 
 # No libraries and no externals: building a release downloads nothing.
 
+# CurseForge relations, set on every file the packager uploads (CurseForge project slugs)
+required-dependencies:
+  - shortest-path-forever
+optional-dependencies:
+  - gathermate2
+  - gatherlite
+  - auctionator
+
 ignore:
   - README.md
   - docs

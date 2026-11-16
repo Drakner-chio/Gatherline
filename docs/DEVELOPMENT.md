@@ -145,8 +145,9 @@ Icons: `media/icons/*.tga` are made by `python3 tools/make_icons.py` (needs Pill
 (dumped with `lua5.1 tools/dump_spf.lua <spf checkout> > spf.py`, then `sed -i 's/nil/None/g' spf.py`):
 `python3 tools/make_hazards.py <ClassicDB.sql.gz> spf.py > Hazards_Data.lua`. Elite camps: creatures of rank
 1-3 on maps 0/1 without NPC flags, not attackable/selectable ones left out, none in capitals or within 300 yards
-of a flight master; spawns within 45 yards joined; each camp outlined in 120-yard tiles, 25 yards past its
-spawns. Towns: flight masters of one faction with none of the other within 400 yards, outlined by the hull of
+of a flight master. Every spawn gets 25 yards round it; spawns up to 70 yards apart are joined, and spawns of
+the same kind (first word of the name: Gordok, Razorfen ...) up to 160 yards apart; the outline follows the
+camp (shapely: union of circles, then shrunk back) with at most 40 corners. Needs `pip install shapely`. Towns: flight masters of one faction with none of the other within 400 yards, outlined by the hull of
 their town ground (or a 150-yard circle). All in world yards; `NoGo.lua` turns them into a zone's map
 positions with `C_Map.GetMapPosFromWorldPos` (kept per zone) and adds the ones on to the solver's walls
 (`WallsFor` in Core.lua) and the world map (orange).

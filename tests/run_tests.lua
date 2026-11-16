@@ -2209,7 +2209,7 @@ do
     list = GP:NoGoAreas(W)
     for _, e in ipairs(list) do byName[e.area.name] = e end
     check(not byName["Hogger"].on and byName["Hogger"].why == "low", "at 30: Hogger open")
-    check(byName["Mor'Ladim"].on, "Mor'Ladim (35) not")
+    check(byName["Morbent Fel"].on and byName["Morbent Fel"].area.spawns == 2, "Morbent Fel and Mor'Ladim (32-35), one area: not")
     GP.FAKE_FACTION = "Alliance"
     check(not GP:NoGoAreas(W)[1].on and select(2, GP:NoGoAuto(GP:NoGoAreas(W)[1].area)) == "friendly", "Alliance: Sentinel Hill is yours")
     GP.FAKE_FACTION = "Horde"

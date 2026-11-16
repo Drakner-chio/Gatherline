@@ -1,5 +1,12 @@
 # Gatherline
 
+## v1.10.1
+
+- **Elite camps joined up:** instead of a ring round every elite, a camp is now one area whose
+  outline follows it – elites close together, or of the same kind (all the Gordok round Dire Maul,
+  the Razorfen round Razorfen Kraul), make one area. About 320 areas instead of 900, much easier
+  to read on the map and to switch. (Areas you switched by hand are back to automatic.)
+
 ## v1.10.0
 
 - **Best gold?** on *New route*: what every zone's herbs and ores you can gather are worth, at

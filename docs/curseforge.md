@@ -57,7 +57,7 @@ Eyes on the road, not the minimap – three parts, each switched on or off, move
 ## Guards and elites? Routes go round.
 
 - **Hostile towns:** the other faction's towns are built in – your routes keep out of them.
-- **Elite camps:** some 900 places where elites, rare elites and bosses stand, with their levels. They open by themselves as you outlevel them.
+- **Elite camps:** over 300 camps of elites, rare elites and bosses, with their levels. They open by themselves as you outlevel them.
 - **Your own no-go areas:** draw any part of a zone on the world map.
 - Each area, each zone and each kind can be switched on or off.
 

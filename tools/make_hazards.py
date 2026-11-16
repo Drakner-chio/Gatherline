@@ -99,42 +99,61 @@ def simplify(poly, most=16):
     return poly
 
 # ---------------------------------------------------------------- elite camps
-JOIN, PAD = 45, 25      # spawns this close are one camp; the area reaches this far past them
-TILE = 120              # a long camp is outlined in squares of this many yards
+# Spawns become areas the way you'd see them: every spawn gets PAD yards round it; spawns up to GAP
+# yards apart are joined into one area, and spawns of the same kind (Gordok ..., Razorfen ...) up to
+# FAMILY_GAP apart too. The outline follows the camp (not a box round it) and is smoothed.
+from shapely.geometry import Point, MultiPoint
+from shapely.ops import unary_union
+PAD, GAP, FAMILY_GAP = 25, 70, 160
+MOST_CORNERS = 40
+GENERIC = {"Dark", "Elder", "Young", "Greater", "Lesser", "Mature", "Ancient", "Giant", "Large", "Black", "Blackrock", "Red", "Green", "Blue"}
+
+def family(name):
+    words = name.replace("'s ", " ").split()
+    if len(words) < 2:
+        return name
+    return " ".join(words[:2]) if words[0] in GENERIC and len(words) > 2 else words[0]
+
+def outline(poly):
+    """Exterior corners (rounded yards), at most MOST_CORNERS"""
+    tol = 4
+    while True:
+        p = poly.simplify(tol, preserve_topology=True)
+        coords = list(p.exterior.coords)[:-1]
+        if len(coords) <= MOST_CORNERS or tol > 200:
+            return [(round(x), round(y)) for x, y in coords]
+        tol *= 1.5
+
 camps = []
 for m in (0, 1):
     pts = [s for s in spawns if s[0] == m]
-    grid = defaultdict(list)
-    for k, s in enumerate(pts):
-        grid[(int(s[1] // JOIN), int(s[2] // JOIN))].append(k)
-    seen = [False] * len(pts)
-    for k in range(len(pts)):
-        if seen[k]:
+    if not pts:
+        continue
+    near = unary_union([Point(s[1], s[2]).buffer(PAD + GAP / 2, 12) for s in pts]).buffer(-GAP / 2, 12)
+    fams = defaultdict(list)
+    for s in pts:
+        fams[family(s[3][0])].append(s)
+    kin = [unary_union([Point(s[1], s[2]).buffer(PAD + FAMILY_GAP / 2, 12) for s in group]).buffer(-FAMILY_GAP / 2, 12)
+           for group in fams.values() if len(group) > 1]
+    shapes = unary_union([near] + kin)
+    polys = list(shapes.geoms) if hasattr(shapes, "geoms") else [shapes]
+    for poly in polys:
+        if poly.is_empty or poly.geom_type != "Polygon":
             continue
-        seen[k] = True
-        group, stack = [], [k]
-        while stack:
-            a = stack.pop()
-            group.append(pts[a])
-            gx, gy = int(pts[a][1] // JOIN), int(pts[a][2] // JOIN)
-            for dx in (-1, 0, 1):
-                for dy in (-1, 0, 1):
-                    for b in grid[(gx + dx, gy + dy)]:
-                        if not seen[b] and (pts[a][1] - pts[b][1]) ** 2 + (pts[a][2] - pts[b][2]) ** 2 <= JOIN * JOIN:
-                            seen[b] = True
-                            stack.append(b)
-        names = Counter(s[3][0] for s in group)
-        low = min(s[3][1] for s in group)
-        high = max(s[3][2] for s in group)
-        # a camp strung out a long way (a town, a valley) is cut in tiles, each its own outline,
-        # so the empty ground between its ends stays open
-        tiles = defaultdict(list)
-        for s in group:
-            tiles[(int(s[1] // TILE), int(s[2] // TILE))].append((s[1], s[2]))
-        polys = [simplify(padded(t, PAD)) for _, t in sorted(tiles.items())]
-        cx = sum(s[1] for s in group) / len(group)
-        cy = sum(s[2] for s in group) / len(group)
-        camps.append((m, low, high, names.most_common(1)[0][0], len(group), round(cx), round(cy), polys))
+        inside = [s for s in pts if poly.buffer(1).contains(Point(s[1], s[2]))]
+        if not inside:
+            continue
+        names = Counter(family(s[3][0]) for s in inside)
+        top = Counter(s[3][0] for s in inside)
+        name = top.most_common(1)[0][0]
+        if len(top) > 1 and names.most_common(1)[0][1] == len(inside) and len(names.most_common(1)[0][0].split()) >= 1:
+            fam = names.most_common(1)[0][0]
+            if fam != name:
+                name = fam   # all of one kind: "Gordok" rather than one of them
+        low = min(s[3][1] for s in inside)
+        high = max(s[3][2] for s in inside)
+        c = poly.centroid
+        camps.append((m, low, high, name, len(inside), round(c.x), round(c.y), [outline(poly)]))
 camps.sort(key=lambda c: (c[0], c[5], c[6]))
 
 # ---------------------------------------------------------------- hostile towns

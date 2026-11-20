@@ -1,4 +1,4 @@
--- Copied unchanged from Shortest Path Forever (cjber, GPL-3.0-or-later), Routing/Path.lua (commit bc9eaa9),
+-- Copied unchanged from Shortest Path Forever (cjber, GPL-3.0-or-later), Routing/Path.lua (commit 7760d22),
 -- https://github.com/cjber/shortest-path-forever. Gatherline uses its own copy, under its own
 -- namespace, reading the walking maps Shortest Path Forever loads (ShortestPathForeverPathData).
 ---@class SPFNamespace
@@ -20,10 +20,19 @@ local tick, Deadline, Expansions, State, surface, grid =
 local cellOf, nodesOf, metadata = Grid.cellOf, Grid.nodesOf, Grid.metadata
 local adjacent, preceding = Grid.adjacent, Grid.preceding
 local entrance, locate, standing, snap, smooth = Grid.entrance, Grid.locate, Grid.standing, Grid.snap, Grid.smooth
-local toward, peak = Grid.toward, Grid.peak
+local toward, peak, climbNodes = Grid.toward, Grid.peak, Grid.climbNodes
 
 local TILE, SNAP, ZTOL, DX, DY = Grid.TILE, Grid.SNAP, Grid.ZTOL, Grid.DX, Grid.DY
 local OFFROAD = Grid.OFFROAD
+
+-- Baked ratios contain both the 1.5-weighted cost and the real cost of the baked road walk.
+-- Their difference is the off-road part times 0.5. Reweight that part only; ETA keeps the real ratio.
+local function roadChoice(choice, real, factor)
+	if factor == OFFROAD then
+		return choice -- keep the existing default's arithmetic exactly
+	end
+	return real + (choice - real) * (factor - 1) / (OFFROAD - 1)
+end
 local RETRIES = 8 -- other cells tried for an endpoint stuck in a pocket
 -- How far below its surface a stuck endpoint may move. Format 1 keeps the bake it shipped with; format 2 knows the
 -- player's falling limit, and past 14.57 yards the drop hurts.
@@ -157,6 +166,9 @@ local function search(st, k, swim, source, tree, goal, targets, left, roads, hz,
 	local N = C * C
 	local g, r, par, stamp, closed = tree.g, tree.r, tree.par, tree.stamp, tree.closed
 	local factor = hz and cellFactors(st, hz, k) or nil
+	local offroad = hz and hz.roadFactor or OFFROAD
+	-- No road record means unpainted ground; it does not switch the preference off.
+	local roadsOn = hz and hz.roads and offroad ~= 1
 	tree.gen = tree.gen + 1
 	local gen = tree.gen
 	tree.k = k
@@ -173,11 +185,12 @@ local function search(st, k, swim, source, tree, goal, targets, left, roads, hz,
 	local u, ux, uy, gu, ru
 	local function relax(v, length, override)
 		-- Forward walks u -> v; a reverse tree walks the stored edge the other way, v -> u, into the source.
+		local distance = (length or 1) * cs
 		if reverse then
-			if steep and not steep(val, z, v, val, z, u) then
+			if steep and not steep(val, z, v, val, z, u, distance) then
 				return
 			end
-		elseif steep and not steep(val, z, u, val, z, v) then
+		elseif steep and not steep(val, z, u, val, z, v, distance) then
 			return
 		end
 		local i = v + 1
@@ -186,7 +199,7 @@ local function search(st, k, swim, source, tree, goal, targets, left, roads, hz,
 		local entered = reverse and u or v
 		local step = override or length * cs * (val[entered + 1] == 2 and swim or 1)
 		local base = entered < N and entered or at[entered + 1]
-		local choice = roads and not roads[base] and step * OFFROAD or step
+		local choice = roadsOn and step * (1 + (offroad - 1) * (1 - (roads and roads[base] or 0))) or step
 		if factor then
 			local f = factor[base]
 			if not f then
@@ -459,8 +472,8 @@ end
 -- outbound search.
 local function connect(st, swim, k, node, roadsOn, hz, reverse)
 	nodesOf(st, k)
-	if reverse and st.fmt < 2 then
-		reverse = nil -- format 1's links are symmetric, so its outbound search already answers
+	if reverse and st.fmt < 2 and not (roadsOn and hz and hz.roadFactor and hz.roadFactor ~= OFFROAD) then
+		reverse = nil -- preserve the legacy/default cache; custom road costs depend on the entered cell
 	end
 	local key = k
 		.. ":"
@@ -490,33 +503,38 @@ local function connect(st, swim, k, node, roadsOn, hz, reverse)
 	return entry.node, entry.edges, entry.reals, entry.tree
 end
 
--- A point without a height (the player, whose UnitPosition height is a placeholder 0, or a map click) could stand on
--- any surface at its spot, so it starts from each one within a cell of it at a distinct height and the search keeps
--- the cheapest: a street beside or over a canal is not walked from the canal bed. Returns each surface's connection,
--- the entrance costs merged by minimum and, per entrance, the surface it came from. inbound returns the costs into the
--- point instead, which is what a goal needs, in the fifth to seventh places, and leaves the outbound ones empty: each
--- caller walks a point one way, and on format 2 the other way is a second grid search. The surfaces themselves are
--- returned too: a walk drawn or searched to a point ends on them, never on wherever the outbound rescue moved it.
-local function connectPoint(st, swim, k, node, h, roadsOn, hz, inbound)
+-- A baked shortcut chose its interior walk at OFFROAD. A different preference
+-- needs new entrance costs before the abstract search chooses its next cluster.
+-- Reuse endpoint vectors, including their profile and direction cache keys.
+local function customRoadEdges(st, swim, u, hz, reverse)
+	local keys, values, size = hk, hv, hn
+	hk, hv, hn = {}, {}, 0
+	local k = floor(u / 4096)
+	local node = entrance(st, u)
+	local edges, reals = {}, {}
+	if node then
+		local _
+		_, edges, reals = connect(st, swim, k, node, true, hz, reverse)
+	end
+	hk, hv, hn = keys, values, size
+	return edges, reals
+end
+
+-- The surfaces a point stands on: its snapped node, or for a point without a height every distinct surface within
+-- a cell of it, dry before water, narrowed by the player's height band.
+local function surfaces(st, k, node, point)
 	local nodes = { node }
-	if not h then
+	if not point.z then
 		local values = grid(st, k)
 		assert(values)
 		local C, val, z, at = st.C, values, st.z[k], st.at[k]
 		local cell = cellOf(st, k, node)
 		local lx, ly = floor(cell / C), cell % C
-		local function consider(n, r)
-			-- A neighbour's water is where the point is not: it would be standing in it.
-			if r > 0 and val[n + 1] == 2 then
-				return
-			end
-			for _, m in ipairs(nodes) do
-				if abs(z[n + 1] - z[m + 1]) <= ZTOL then
-					return
-				end
-			end
-			nodes[#nodes + 1] = n
-		end
+		-- A pier's planks stand over the water: the base surface at the point's spot is the water, and the planks
+		-- are a floor six to eight yards above it. Take every surface within a cell, then choose the dry ones first:
+		-- a dry surface within ZTOL replaces an already-taken water node at the same spot, so a walk from a pier
+		-- starts on its planks rather than in the water below (#889).
+		local candidates = {}
 		for r = 0, 1 do
 			for dx = -r, r do
 				for dy = -r, r do
@@ -524,18 +542,74 @@ local function connectPoint(st, swim, k, node, h, roadsOn, hz, inbound)
 					if (dx == r or dx == -r or dy == r or dy == -r) and x >= 0 and y >= 0 and x < C and y < C then
 						local c = x * C + y
 						if val[c + 1] ~= 0 then
-							consider(c, r)
+							candidates[#candidates + 1] = { n = c, r = r, wet = val[c + 1] == 2 }
 						end
 						local n = at[-(c + 1)]
 						while n and at[n + 1] == c do
-							consider(n, r)
+							candidates[#candidates + 1] = { n = n, r = r, wet = val[n + 1] == 2 }
 							n = n + 1
 						end
 					end
 				end
 			end
 		end
+		local taken = {}
+		local function take(candidate)
+			local n, r = candidate.n, candidate.r
+			-- A neighbour's water is where the point is not: it would be standing in it.
+			if r > 0 and candidate.wet then
+				return
+			end
+			for index, m in ipairs(taken) do
+				if abs(z[n + 1] - z[m + 1]) <= ZTOL then
+					if not candidate.wet and val[m + 1] == 2 then
+						taken[index] = n
+					end
+					return
+				end
+			end
+			taken[#taken + 1] = n
+		end
+		-- Two passes rather than a sort: every dry surface is considered before any water at the same spot, so the
+		-- planks on a pier win over the water under them without reordering the handful of candidates.
+		for _, candidate in ipairs(candidates) do
+			if not candidate.wet then
+				take(candidate)
+			end
+		end
+		for _, candidate in ipairs(candidates) do
+			if candidate.wet then
+				take(candidate)
+			end
+		end
+		nodes = taken
+		local band = point.band
+		if band and ns.Band then
+			local inside = {}
+			for _, n in ipairs(nodes) do
+				if ns.Band.Holds(band, z[n + 1]) then
+					inside[#inside + 1] = n
+				end
+			end
+			if #inside > 0 then
+				nodes = inside
+			end
+		end
 	end
+	return nodes
+end
+
+-- A point without a height (the player, whose UnitPosition height is a placeholder 0, or a map click) could stand on
+-- any surface at its spot, so it starts from each one within a cell of it at a distinct height and the search keeps
+-- the cheapest: a street beside or over a canal is not walked from the canal bed. The player's measured height band
+-- (Band.lua) narrows those surfaces to the ones they can be standing on; a band that fits none of them is no
+-- measurement and every surface stays, exactly as a point with no band. Returns each surface's connection, the
+-- entrance costs merged by minimum and, per entrance, the surface it came from. inbound returns the costs into the
+-- point instead, which is what a goal needs, in the fifth to seventh places, and leaves the outbound ones empty: each
+-- caller walks a point one way, and on format 2 the other way is a second grid search. The surfaces themselves are
+-- returned too: a walk drawn or searched to a point ends on them, never on wherever the outbound rescue moved it.
+local function connectPoint(st, swim, k, node, point, roadsOn, hz, inbound)
+	local nodes = surfaces(st, k, node, point)
 	local ends, merged, mergedReal, via = {}, {}, {}, {}
 	for _, start in ipairs(nodes) do
 		local n, edges, reals, tree = connect(st, swim, k, start, roadsOn, hz, inbound)
@@ -567,18 +641,23 @@ end
 -- the path entries it replaces. A point standing on a surface must be reached on it, or
 -- leave from it; one with no surface in its cell (inside rock or a building the grid has none for) passes when the
 -- segment runs on into it only across cells with no surface at all.
-local function clearEnd(st, P, j, point, outbound, water, limit)
+local function clearEnd(st, P, j, point, outbound, water, limit, budget, real)
 	local fx, fy, k, node = own(st, point)
 	local cx, cy = P.x[j] + 0.5, P.y[j] + 0.5
 	if outbound and node then
-		local tk, tn = toward(st, P, k, node, fx, fy, cx, cy, water, limit)
-		return tk == P.k[j] and tn == P.n[j]
+		local tk, tn, time = toward(st, P, k, node, fx, fy, cx, cy, water, limit, budget, real, P.k[j], P.n[j])
+		return tk == P.k[j] and tn == P.n[j], time
 	end
-	local tk, tn = toward(st, P, P.k[j], P.n[j], cx, cy, fx, fy, water, limit)
+	-- With no start surface this reverse legality check cannot establish a directed outbound reference.
+	-- Keep the assembled fallback, but do not authorize an optional shortcut from an unmeasured connector.
+	if outbound and real then
+		return false
+	end
+	local tk, tn, time = toward(st, P, P.k[j], P.n[j], cx, cy, fx, fy, water, limit, budget, real, k, node)
 	if not tk then
-		return tn == true
+		return tn == true, time
 	end
-	return not node or (tk == k and tn == node)
+	return not node or (tk == k and tn == node), time
 end
 
 -- With no pulled vertex between them, the line is the one chord between the two points: walked whole from a start
@@ -590,8 +669,11 @@ local function clearChord(st, P, from, to, water, limit, budget)
 		return false
 	end
 	local tx, ty, gk, goal = own(st, to)
-	local tk, tn = toward(st, P, k, node, fx, fy, tx, ty, water, limit, budget)
-	return tk ~= nil and (not goal or (tk == gk and tn == goal))
+	local tk, tn = toward(st, P, k, node, fx, fy, tx, ty, water, limit, budget, nil, gk, goal)
+	if not tk then -- a goal with no surface in its cell, reached across cells with none, as clearEnd allows
+		return tn == true
+	end
+	return not goal or (tk == gk and tn == goal)
 end
 
 -- The largest factor a hazard profile charges over path entries first..last, or nil without a profile: a drawn segment
@@ -601,7 +683,7 @@ local function limitOver(P, first, last)
 end
 
 -- Sliced A* and refinement share scratch trees; splitting adds hot-path calls and upvalues
-local function run(map, from, to, waterWalking, costOnly, hz)
+local function run(map, from, to, waterWalking, costOnly, hz, job)
 	if hz and hz.ConnectorWalk and hz.ConnectorWalk(from, to) then
 		hz = nil
 	end
@@ -619,19 +701,45 @@ local function run(map, from, to, waterWalking, costOnly, hz)
 	if not sk or not gk then
 		return nil, "outside"
 	end
+	if not costOnly then
+		Grid.Hold(job, st, sk)
+		Grid.Hold(job, st, gk)
+	end
 	sc, gc = snap(st, sk, sc, from.x, from.y, from.z), snap(st, gk, gc, to.x, to.y, to.z)
 	if not sc or not gc then
 		return nil, "offmesh"
 	end
+	-- A start at a known height on a surface the goal can stand on walks nowhere: a map click on a flight master is
+	-- probed from that flight master. The search below answers 0 for it too, after connecting both ends to their
+	-- cluster, which is most of a probe's time (#1080).
+	if costOnly and from.z and sk == gk then
+		for _, n in ipairs(surfaces(st, gk, gc, to)) do
+			if n == sc then
+				return 0
+			end
+		end
+	end
 	local C = st.C
-	local roadsOn = hz and hz.roads
+	local roadsOn = hz and hz.roads and hz.roadFactor ~= 1
+	local offroad = hz and hz.roadFactor or OFFROAD
 
 	local S, G = trees.S, trees.G
-	local starts, source, sourceReal, sourceVia = connectPoint(st, swim, sk, sc, from.z, roadsOn, hz)
+	local starts, source, sourceReal, sourceVia = connectPoint(st, swim, sk, sc, from, roadsOn, hz)
 	-- The goal's costs are the walks into it, so a ledge drop is not climbed to reach it. A local walk to it ends on
 	-- the surfaces it stands on, not on wherever the outbound rescue moved it.
-	local _, _, _, _, target, targetReal, targetVia, goalOwn = connectPoint(st, swim, gk, gc, to.z, roadsOn, hz, true)
-	local key = table.concat({ sk, sc, gk, gc, swim, from.z and 1 or 0, to.z and 1 or 0, hz and hz.key or "" }, ":")
+	local _, _, _, _, target, targetReal, targetVia, goalOwn = connectPoint(st, swim, gk, gc, to, roadsOn, hz, true)
+	local key = table.concat({
+		sk,
+		sc,
+		gk,
+		gc,
+		swim,
+		from.z and 1 or 0,
+		to.z and 1 or 0,
+		hz and hz.key or "",
+		from.band and string.format("%.1f:%.1f", from.band.lo, from.band.hi) or "",
+		to.band and string.format("%.1f:%.1f", to.band.lo, to.band.hi) or "",
+	}, ":")
 	st.paths = st.paths or {}
 	local cached = st.paths[key]
 	local hops, cost, directFrom, directTo
@@ -658,12 +766,14 @@ local function run(map, from, to, waterWalking, costOnly, hz)
 		for id in pairs(source) do
 			nodesOf(st, floor(id / 4096))
 			local _, _, component = metadata(st, id)
-			comps[component] = true
+			if component then
+				comps[component] = true
+			end
 		end
 		for id in pairs(target) do
 			nodesOf(st, floor(id / 4096))
 			local _, _, component = metadata(st, id)
-			shared = shared or comps[component]
+			shared = shared or (component ~= nil and comps[component])
 		end
 		if not direct and not shared then
 			return nil, "unreachable"
@@ -715,19 +825,30 @@ local function run(map, from, to, waterWalking, costOnly, hz)
 					relax(GOAL, gu + target[u], ru + targetReal[u], u)
 				end
 				nodesOf(st, floor(u / 4096))
-				local adj = adjacent(st, u)
+				local adj = adjacent(st, u, roadsOn == true)
 				local ratios = roadsOn and Grid.roadEdges(st, u) or nil
+				local custom, customReal
+				if roadsOn and offroad ~= OFFROAD then
+					custom, customReal = customRoadEdges(st, swim, u, hz)
+				end
 				for e = 1, #adj, 3 do
 					local v = adj[e]
-					if aclosed[v] ~= gen then
+					if aclosed[v] ~= gen and climbNodes(st, u, v) then
 						nodesOf(st, floor(v / 4096))
 						local yards = adj[e + cost2]
 						local factor = hz and hazard(st, hz, u, v) or 1
-						if ratios then
+						if custom and floor(v / 4096) == floor(u / 4096) then
+							if custom[v] then
+								relax(v, gu + custom[v], ru + customReal[v], u)
+							end
+						elseif ratios then
 							local ei, m = (e + 2) / 3, cost2 == 2 and 2 or 0
 							relax(
 								v,
-								gu + yards * ratios[ei * 4 - 3 + m] * factor,
+								gu
+									+ yards
+										* roadChoice(ratios[ei * 4 - 3 + m], ratios[ei * 4 - 2 + m], offroad)
+										* factor,
 								ru + yards * ratios[ei * 4 - 2 + m],
 								u
 							)
@@ -757,16 +878,22 @@ local function run(map, from, to, waterWalking, costOnly, hz)
 		return cost
 	end
 
+	for _, hop in ipairs(hops) do
+		if hop ~= START and hop ~= GOAL then
+			Grid.Hold(job, st, floor(hop / 4096))
+		end
+	end
+
 	-- Refine each hop into nodes with their global cells and a running count of water nodes. The pruned entrance
 	-- graph may route through an entrance a little off the way, which refines to a spur walked out and back: a node
 	-- reached again cuts the loop since its first visit, so the drawn walk never doubles back.
 	---@type SPFPathPoints
-	local P = { x = {}, y = {}, w = {}, t = {}, k = {}, n = {}, swim = swim }
+	local P = { x = {}, y = {}, z = {}, w = {}, t = {}, k = {}, n = {}, swim = swim }
 	if hz then
 		P.factor = factorOf(st, hz)
 	end
 	if roadsOn then
-		P.roads, P.r = true, {}
+		P.roads, P.r, P.roadFactor = true, {}, offroad
 	end
 	local seen = {}
 	local function add(k, node)
@@ -775,7 +902,7 @@ local function run(map, from, to, waterWalking, costOnly, hz)
 		if at then
 			for j = #P.x, at + 1, -1 do
 				seen[P.k[j] * 1048576 + P.n[j]] = nil
-				P.x[j], P.y[j], P.w[j], P.t[j], P.k[j], P.n[j] = nil, nil, nil, nil, nil, nil
+				P.x[j], P.y[j], P.z[j], P.w[j], P.t[j], P.k[j], P.n[j] = nil, nil, nil, nil, nil, nil, nil
 				if P.r then
 					P.r[j] = nil
 				end
@@ -787,6 +914,7 @@ local function run(map, from, to, waterWalking, costOnly, hz)
 		P.x[n + 1], P.y[n + 1] = floor(k / st.ny) * C + floor(cell / C), (k % st.ny) * C + cell % C
 		P.k[n + 1], P.n[n + 1] = k, node
 		local wet = ((st.val[k] or grid(st, k))[node + 1] == 2)
+		P.z[n + 1] = st.z[k][node + 1]
 		P.w[n + 1] = (P.w[n] or 0) + (wet and 1 or 0)
 		-- The walk's own time to this entry, charged as the search charges a step: the cell it enters, land at run
 		-- speed and water at the map's swim.
@@ -850,24 +978,41 @@ local function run(map, from, to, waterWalking, costOnly, hz)
 
 	-- Points carry the height of the surface they stand on; the returned cost uses real walking/swimming time, with
 	-- hazards affecting only the route chosen. points.wet is the yards over water, which call for Water Walking.
-	local keep = smooth(st, P)
-	if #keep == 1 then -- both ends on one node
-		keep[2] = keep[1]
-	end
 	local n = #P.x
-	-- An end segment that fails is drawn through its end node's centre first: the string was pulled from there, so the
-	-- rest of the line holds as it did. A chord that fails tries each end that way.
-	local startVia, goalVia = #keep > 2 and keep[2] or n, #keep > 2 and keep[#keep - 1] or 1
-	local startDetour, goalDetour = false, false
-	if #keep > 2 or not clearChord(st, P, from, to, P.w[n] > 0, limitOver(P, 1, n), cost) then
-		startDetour = not clearEnd(st, P, startVia, from, true, P.w[startVia] > 0, limitOver(P, 1, startVia))
-		-- A chord whose start detoured now reaches the goal from the start node's centre.
-		if startDetour and #keep <= 2 then
-			goalVia = 1
-		end
-		goalDetour =
-			not clearEnd(st, P, goalVia, to, false, P.w[n] - (P.w[goalVia - 1] or 0) > 0, limitOver(P, goalVia, n))
+	local startOK, startTime = clearEnd(st, P, 1, from, true, P.w[1] > 0, limitOver(P, 1, 1), nil, true)
+	local goalOK, goalTime =
+		clearEnd(st, P, n, to, false, P.w[n] - (P.w[n - 1] or 0) > 0, limitOver(P, n, n), nil, true)
+	-- P.t is the refined walk's real running-yard prefix, independent of reported/cached search cost.
+	local chordBudget = startOK and goalOK and startTime + P.t[n] - P.t[1] + goalTime
+	-- The end segments the line is drawn with, for the pull to measure and check as drawn.
+	local function startClear(j)
+		return clearEnd(st, P, j, from, true, P.w[j] > 0, limitOver(P, 1, j), startTime + P.t[j] - P.t[1])
 	end
+	local function goalClear(j)
+		return clearEnd(
+			st,
+			P,
+			j,
+			to,
+			false,
+			P.w[n] - (P.w[j - 1] or 0) > 0,
+			limitOver(P, j, n),
+			P.t[n] - P.t[j] + goalTime
+		)
+	end
+	local keep, startDetour, goalDetour = smooth(st, P, {
+		sx = (from.x - x0) / cs,
+		sy = (from.y - y0) / cs,
+		gx = (to.x - x0) / cs,
+		gy = (to.y - y0) / cs,
+		start = startOK and startClear,
+		goal = goalOK and goalClear,
+		chord = function()
+			return chordBudget and clearChord(st, P, from, to, P.w[n] > 0, limitOver(P, 1, n), chordBudget)
+		end,
+	})
+	-- The pull chose whether each end is drawn through its end entry's centre: a start or goal segment that is not
+	-- clear detours that way, so the rest of the line holds as it was pulled.
 	local drawn = { 1 }
 	if startDetour then
 		drawn[#drawn + 1] = 1
@@ -883,12 +1028,11 @@ local function run(map, from, to, waterWalking, costOnly, hz)
 	local points = { { map = map, x = from.x, y = from.y, z = from.z } }
 	for i = 2, #drawn - 1 do
 		local j = drawn[i]
-		grid(st, P.k[j])
 		points[#points + 1] = {
 			map = map,
 			x = x0 + (P.x[j] + 0.5) * cs,
 			y = y0 + (P.y[j] + 0.5) * cs,
-			z = st.z[P.k[j]][P.n[j] + 1],
+			z = P.z[j],
 		}
 	end
 	points[#points + 1] = { map = map, x = to.x, y = to.y, z = to.z }
@@ -940,6 +1084,79 @@ local function runMany(map, from, targets, waterWalking, reverse, job, hz)
 			yield()
 		end
 	end
+	local swim, cost2 = waterWalking and 1 or st.swim, waterWalking and 2 or 1
+	local roadsOn = hz and hz.roads and hz.roadFactor ~= 1
+	local offroad = hz and hz.roadFactor or OFFROAD
+	local starts, source, sourceReal, _, sourceIn, sourceInReal =
+		connectPoint(st, swim, sk, sc, from, roadsOn, hz, reverse)
+	-- A target's connection to its own cluster, made once: false when it stands on no node.
+	local linked = {}
+	local function link(i, k)
+		if linked[i] == nil then
+			local _, node = pointNode(st, targets[i])
+			if node then
+				-- A forward batch costs a walk into each target, so a drop is not climbed to reach it; a reverse batch
+				-- costs a walk out of it, and its meeting point is whatever reaches `from`.
+				local goals, ends, realEnds, _, into, intoReal =
+					connectPoint(st, swim, k, node, targets[i], roadsOn, hz, not reverse)
+				if not reverse then
+					ends, realEnds = into, intoReal
+				end
+				linked[i] = { goals = goals, ends = ends, realEnds = realEnds }
+			else
+				linked[i] = false
+			end
+		end
+		return linked[i]
+	end
+	-- A target on the source's own node is a transfer. Settle its zero before any other search, so a batch paused early
+	-- still tells a transfer from a walk: once job.snapped is set, every unsettled target is a real walk away.
+	-- connectPoint reuses the shared heap, which still holds the source connection's frontier.
+	local heldKeys, heldValues, heldSize = hk, hv, hn
+	hk, hv, hn = {}, {}, 0
+	for i, point in ipairs(targets) do
+		if costs[i] == nil and locate(st, point.x, point.y) == sk then
+			local target = link(i, sk)
+			for _, a in ipairs(target and starts or {}) do
+				for _, b in ipairs(target and target.goals or {}) do
+					if costs[i] == nil and (reverse and b.node or a.node) == (reverse and a.own or b.own) then
+						costs[i] = 0
+						if job then
+							job.revision = job.revision + 1
+						end
+					end
+				end
+			end
+		end
+	end
+	-- Both ends rescued onto one entrance at no cost are a transfer too, even from different clusters. Only a source
+	-- with such an entrance needs the check, and only targets in that entrance's own cluster can share it: a point
+	-- connects to its own cluster's entrances, and an entrance id names its cluster. The rest stay unlinked until the
+	-- search reaches them.
+	local zeros, zeroClusters = {}, {}
+	for id, cost in pairs((reverse and sourceIn) or source) do
+		if cost == 0 then
+			zeros[id], zeroClusters[floor(id / 4096)] = true, true
+		end
+	end
+	if next(zeros) then
+		for i, point in ipairs(targets) do
+			local k = costs[i] == nil and locate(st, point.x, point.y)
+			local target = k and zeroClusters[k] and link(i, k)
+			for id, cost in pairs(target and target.ends or {}) do
+				if costs[i] == nil and cost == 0 and zeros[id] then
+					costs[i] = 0
+					if job then
+						job.revision = job.revision + 1
+					end
+				end
+			end
+		end
+	end
+	hk, hv, hn = heldKeys, heldValues, heldSize
+	if job then
+		job.snapped = true
+	end
 	-- Resolve a short dock/flight-master connector on its own. FindMany shares one frontier among its targets, so a
 	-- single target cannot remove hazard weights from the rest of that frontier.
 	if hz and hz.ConnectorWalk then
@@ -956,10 +1173,6 @@ local function runMany(map, from, targets, waterWalking, reverse, job, hz)
 			end
 		end
 	end
-	local swim, cost2 = waterWalking and 1 or st.swim, waterWalking and 2 or 1
-	local roadsOn = hz and hz.roads
-	local starts, source, sourceReal, _, sourceIn, sourceInReal =
-		connectPoint(st, swim, sk, sc, from.z, roadsOn, hz, reverse)
 	local clusters, links, dist, real, closed, left = {}, {}, {}, {}, {}, #targets
 	for i, point in ipairs(targets) do
 		local k = locate(st, point.x, point.y)
@@ -988,19 +1201,21 @@ local function runMany(map, from, targets, waterWalking, reverse, job, hz)
 		-- Local searches need their own heap, including across a yield midway through a connection.
 		local keys, values, size = hk, hv, hn
 		hk, hv, hn = {}, {}, 0
-		local direct, directReal, ends, realEnds = {}, {}, {}, {}
+		local direct, directReal, ends, realEnds, goalsOf = {}, {}, {}, {}, {}
 		for _, i in ipairs(list) do
-			local _, node = pointNode(st, targets[i])
-			if node then
-				local goals
-				-- A forward batch costs a walk into each target, so a drop is not climbed to reach it; a reverse batch
-				-- costs a walk out of it, and its meeting point is whatever reaches `from`.
-				local into, intoReal
-				goals, ends[i], realEnds[i], _, into, intoReal =
-					connectPoint(st, swim, k, node, targets[i].z, roadsOn, hz, not reverse)
-				if not reverse then
-					ends[i], realEnds[i] = into, intoReal
+			local target = link(i, k)
+			if target then
+				goalsOf[i], ends[i], realEnds[i] = target.goals, target.ends, target.realEnds
+			else
+				costs[i], left = false, left - 1
+				if job then
+					job.revision = job.revision + 1
 				end
+			end
+		end
+		for _, i in ipairs(list) do
+			local goals = goalsOf[i]
+			if goals then
 				for _, a in ipairs(k == sk and starts or {}) do
 					for _, b in ipairs(goals) do
 						-- Both trees search outward from their endpoint; a reverse batch walks to the source. A local
@@ -1023,11 +1238,6 @@ local function runMany(map, from, targets, waterWalking, reverse, job, hz)
 							direct[i], directReal[i] = cost, realCost
 						end
 					end
-				end
-			else
-				costs[i], left = false, left - 1
-				if job then
-					job.revision = job.revision + 1
 				end
 			end
 		end
@@ -1072,22 +1282,33 @@ local function runMany(map, from, targets, waterWalking, reverse, job, hz)
 					relax(ends[i], dist[u] + ends[i + 1], real[u] + ends[i + 2])
 				end
 				nodesOf(st, k)
-				local adj = reverse and preceding(st, u) or adjacent(st, u)
+				local adj = reverse and preceding(st, u, roadsOn == true) or adjacent(st, u, roadsOn == true)
 				-- a reverse search over format 2 walks the edges into u, whose ratios are their sources' outbound ones;
 				-- format 1's symmetric graph keeps the outbound list as it shipped
 				local ratios = roadsOn
 						and (reverse and st.fmt >= 2 and Grid.roadEdgesIn(st, u) or Grid.roadEdges(st, u))
 					or nil
+				local custom, customReal
+				if roadsOn and offroad ~= OFFROAD then
+					custom, customReal = customRoadEdges(st, swim, u, hz, reverse)
+				end
 				for e = 1, #adj, 3 do
 					local v = adj[e]
-					if not closed[v] then
+					if not closed[v] and climbNodes(st, reverse and v or u, reverse and u or v) then
 						local yards = adj[e + cost2]
 						local factor = hz and hazard(st, hz, u, v) or 1
-						if ratios then
+						if custom and floor(v / 4096) == k then
+							if custom[v] then
+								relax(v, dist[u] + custom[v], real[u] + customReal[v])
+							end
+						elseif ratios then
 							local ei, m = (e + 2) / 3, cost2 == 2 and 2 or 0
 							relax(
 								v,
-								dist[u] + yards * ratios[ei * 4 - 3 + m] * factor,
+								dist[u]
+									+ yards
+										* roadChoice(ratios[ei * 4 - 3 + m], ratios[ei * 4 - 2 + m], offroad)
+										* factor,
 								real[u] + yards * ratios[ei * 4 - 2 + m]
 							)
 						else
@@ -1148,7 +1369,7 @@ local function bakeEdges(st, k, road)
 	end
 	local flat, head, size = {}, {}, 0
 	local function add(from, v, length, override)
-		if steep and not steep(val, z, from, val, z, v) then
+		if steep and not steep(val, z, from, val, z, v, (length or 1) * cs) then
 			return
 		end
 		local i = v + 1
@@ -1161,7 +1382,8 @@ local function bakeEdges(st, k, road)
 		end
 		local base = v < N and v or at[i]
 		size = size + 4
-		flat[size - 3], flat[size - 2], flat[size - 1], flat[size] = v, step, wet, road[base] == true and 1 or OFFROAD
+		flat[size - 3], flat[size - 2], flat[size - 1], flat[size] =
+			v, step, wet, 1 + (OFFROAD - 1) * (1 - (road[base] or 0))
 	end
 	for node = 0, top - 1 do
 		head[node + 1] = size + 1
@@ -1388,22 +1610,22 @@ function Path.BakeRoadEdges(map)
 					else
 						-- A cluster with no road cells answers false however its neighbour decodes, so the grid of a
 						-- cross-cluster edge's far end is only read when that cluster paints roads.
-						local on = false
+						local coverage = 0
 						local other = Grid.roads(st, floor(v / 4096))
 						if other then
 							-- A landing that the neighbour's grid cannot place is no road, as before.
 							local cell = metadata(st, v)
-							on = cell ~= nil and other[cell] == true and nodeAt(v) ~= nil
+							coverage = cell ~= nil and nodeAt(v) ~= nil and other[cell] or 0
 						end
 						if c1 == 0 then
 							q1, q2 = 63, 0
 						else
-							q1, q2 = on and 0 or 63, 0
+							q1, q2 = ratioQ(1 + (OFFROAD - 1) * (1 - coverage)), 0
 						end
 						if c2 == 0 then
 							q3, q4 = 63, 0
 						else
-							q3, q4 = on and 0 or 63, 0
+							q3, q4 = ratioQ(1 + (OFFROAD - 1) * (1 - coverage)), 0
 						end
 					end
 					if q1 == 63 and q2 == 0 and q3 == 63 and q4 == 0 then
@@ -1450,8 +1672,9 @@ end
 
 ---@param job SPFPathJob?
 ---@param point SPFPoint
+---@param sliced? boolean asked from inside a path job, which may pause to decode the point's cluster
 ---@return boolean
-function Path.ReuseMany(job, point)
+function Path.ReuseMany(job, point, sliced)
 	if not job or job.map ~= point.map or not job.sourceNode then
 		return false
 	end
@@ -1459,12 +1682,28 @@ function Path.ReuseMany(job, point)
 	if (from.x - point.x) ^ 2 + (from.y - point.y) ^ 2 > 9 or (from.z and point.z and abs(from.z - point.z) > ZTOL) then
 		return false
 	end
+	-- A start inside a different height band may have been settled on another surface.
+	local one, other = from.band, point.band
+	if (one or other) and not (one and other and one.lo == other.lo and one.hi == other.hi) then
+		return false
+	end
 	local st = State(job.map)
 	if not st then
 		return false
 	end
-	-- Asked from a batch's callback, where the client may be inside a C call no yield crosses: the endpoint's cluster
-	-- is decoded whole to answer, never sliced (#803).
+	if Grid.locate(st, point.x, point.y) ~= job.sourceCluster then
+		return false
+	end
+	if sliced then
+		local k, node = pointNode(st, point)
+		return k == job.sourceCluster and node == job.sourceNode
+	end
+	-- Asked in the caller's frame, where the client may be inside a C call no yield crosses (#803): only a decoded
+	-- cluster answers, since decoding one whole is a frame spike. The player's own cluster is normally decoded (Floor
+	-- pins it); otherwise the batch is searched again, sliced.
+	if not Grid.Ready(st, job.sourceCluster) then
+		return false
+	end
 	local k, node = Grid.Quiet(pointNode, st, point)
 	return k == job.sourceCluster and node == job.sourceNode
 end
@@ -1481,7 +1720,7 @@ local function start(job)
 	if job.targets then
 		return runMany(job.map, job.from, job.targets, job.waterWalking, job.reverse, job, job.hazards)
 	end
-	return run(job.map, job.from, job.to, job.waterWalking, job.costOnly, job.hazards)
+	return run(job.map, job.from, job.to, job.waterWalking, job.costOnly, job.hazards, job)
 end
 
 local spare
@@ -1514,6 +1753,7 @@ function Path.FindSync(map, from, to, waterWalking, hazards)
 	local co = coroutine.create(start)
 	local saved = scratch()
 	local ok, points, cost = coroutine.resume(co, job)
+	Grid.Release(job)
 	scratch(saved)
 	if not ok then
 		error(points)

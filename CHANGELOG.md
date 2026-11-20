@@ -1,5 +1,13 @@
 # Gatherline
 
+## v1.10.4
+
+- **Fixed: routes in straight lines with Shortest Path Forever 1.43.** Its walking maps changed
+  inside, and Gatherline's copy of the walking search could no longer read them (one chat line,
+  then straight lines only). The walking search is now brought up to Shortest Path Forever 1.43.5.
+  It also no longer sends you up slopes too steep to climb, and a walk from a pier starts on its
+  planks, not in the water. Rebuild a route to get the new lines.
+
 ## v1.10.3
 
 - **Fixed: Gatherline using most of the CPU and lots of memory** (low frame rate) since the

@@ -1994,6 +1994,20 @@ do
     local lines = 0
     for _, l in ipairs(parts.lens.lines) do if l:IsShown() then lines = lines + 1 end end
     check(parts.lens:IsShown() and lines >= 3, "the lens draws the line round you: " .. lines)
+    -- its writing: what the stop says, where, and the reach line
+    local function named()
+        for _, nm in ipairs(parts.lens.names) do if nm:IsShown() then return nm:GetText() end end
+    end
+    check(hs.lensName == "both" and hs.lensRangeAt == "above" and parts.lens.range:IsShown(), "lens writing: name and distance, reach line above")
+    local both = named()
+    hs.lensName = "dist"; GP:UpdateHud(true); GP.HudTick()
+    local dist = named()
+    check(both and dist and #dist < #both and both:find(dist, 1, true), "distance only: " .. tostring(dist))
+    hs.lensName = "off"; hs.lensRangeAt = "off"; GP:UpdateHud(true); GP.HudTick()
+    check(not named() and not parts.lens.range:IsShown(), "lens writing off")
+    hs.lensName = "nonsense"; GP:HudSettings()
+    check(hs.lensName == "both", "an unknown choice goes back to the default")
+    hs.lensRangeAt = "above"; GP:UpdateHud(true); GP.HudTick()
     -- Shortest Path's own compass at the top: the band moves under it, and back
     ShortestPathForeverCompass = CreateFrame("Frame")
     GP.HudTick()

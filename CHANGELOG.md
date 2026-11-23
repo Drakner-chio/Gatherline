@@ -1,5 +1,13 @@
 # Gatherline
 
+## v1.10.6
+
+- **Lens writing to your liking:** *Gathering HUD → Lens writing* sets what the stop ahead shows on
+  the ground lens (name and distance, name only, distance only, nothing), where it sits by its dot
+  (right, left, above, below), and where the reach line ("100 yards round you") goes: above the
+  lens, in it at the top, below it, or off. It now starts above the lens, clear of quest and NPC
+  text in the middle of the screen. Its size is the lens's *Text size* under *Look*.
+
 ## v1.10.5
 
 - **Fixed: routes in straight lines with Shortest Path Forever 1.45.** It now ships its walking

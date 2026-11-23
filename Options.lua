@@ -1349,7 +1349,32 @@ local function BuildHud(p)
     AddRefresher(refs.hudRange.Refresh)
     T.Tooltip(refs.hudRange, "Lens reach", "How far round you the ground lens shows the route.")
 
-    local card3 = Card(p, "Place", 0, -322, PAGE_W, 112)
+    -- the lens's writing
+    local card4 = Card(p, "Lens writing", 0, -322, PAGE_W, 96)
+    local CHOICE_NAMES = {
+        lensName = { both = "Name and distance", name = "Name only", dist = "Distance only", off = "Nothing" },
+        lensNameAt = { right = "Right of the dot", left = "Left of the dot", above = "Above the dot", below = "Below the dot" },
+        lensRangeAt = { above = "Above the lens", inside = "In the lens, at the top", below = "Below the lens", off = "Off" },
+    }
+    local function Choice(text, x, y, w, key, tip)
+        local lbl = Text(card4, text, "GameFontHighlight")
+        lbl:SetPoint("TOPLEFT", x, y - 6)
+        local d = T.Dropdown(card4, w, GP.HUD_CHOICES[key], function(k) return L[CHOICE_NAMES[key][k]] end,
+            function() return GP:HudSettings()[key] end,
+            function(k) GP:HudSettings()[key] = k; GP:UpdateHud(true); GP:RefreshConfig() end)
+        d:SetPoint("TOPLEFT", x + (x == 12 and 88 or 44), y)
+        T.Tooltip(d, text, tip)
+        AddRefresher(function() d:Refresh() end)
+        return d
+    end
+    refs.hudLensName = Choice("Stop ahead", 12, -28, 164, "lensName",
+        "What's written by the stop you head for on the lens. Its size: Look, Ground lens, Text size.")
+    refs.hudLensNameAt = Choice("Where", COL2, -28, 200, "lensNameAt",
+        "Where that writing sits by the stop's dot.")
+    refs.hudLensRangeAt = Choice("Reach line", 12, -60, 164, "lensRangeAt",
+        "Where the line saying how far the lens reaches (\"100 yards round you\") goes, or off. Above the lens keeps it clear of quest and NPC text in the middle of the screen.")
+
+    local card3 = Card(p, "Place", 0, -424, PAGE_W, 100)
     refs.hudMove = T.LabeledSwitch(card3, "Move the parts", 12, -30)
     refs.hudMove:SetScript("OnClick", function(self)
         local h = GP:HudSettings()

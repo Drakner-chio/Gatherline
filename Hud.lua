@@ -26,7 +26,14 @@ local DOT = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 GP.HUD_DEFAULTS = {
     compass = true, lens = false, card = true, track = true,
     scale = 100, alpha = 90, lensRange = 100, locked = true, combat = true,
+    -- the lens's writing: what the stop ahead says and where, where the reach line goes
+    lensName = "both", lensNameAt = "right", lensRangeAt = "above",
     pos = {},
+}
+GP.HUD_CHOICES = {
+    lensName = { "both", "name", "dist", "off" },
+    lensNameAt = { "right", "left", "above", "below" },
+    lensRangeAt = { "above", "inside", "below", "off" },
 }
 GP.HUD_RANGES = { scale = { 60, 160 }, alpha = { 30, 100 }, lensRange = { 50, 200 } }
 -- each part's own look: size, text size and opacity (%)
@@ -60,6 +67,11 @@ function GP:HudSettings()
         if type(h[k]) ~= type(v) then h[k] = type(v) == "table" and {} or v end
     end
     for k, r in pairs(self.HUD_RANGES) do h[k] = max(r[1], min(r[2], floor(h[k]))) end
+    for k, list in pairs(self.HUD_CHOICES) do
+        local ok = false
+        for _, v in ipairs(list) do if h[k] == v then ok = true end end
+        if not ok then h[k] = self.HUD_DEFAULTS[k] end
+    end
     if type(h.parts) ~= "table" then h.parts = {} end
     for _, key in ipairs(self.HUD_PART_KEYS) do
         local pt = h.parts[key]
@@ -404,7 +416,6 @@ local function BuildLens()
     me:SetPoint("CENTER", 0, 0)
     f.me = me
     f.range = Label(f, 11, C.muted)
-    f.range:SetPoint("TOP", f, "CENTER", 0, -LENS_RY - 6)
     f.range:SetJustifyH("CENTER")
     return f
 end
@@ -429,8 +440,17 @@ local function Line(f, i)
     return l
 end
 
+-- where the stop's writing sits by its dot: its point, the dot's point, offset
+local NAME_AT = {
+    right = { "LEFT", "RIGHT", 6, 0 },
+    left = { "RIGHT", "LEFT", -6, 0 },
+    above = { "BOTTOM", "TOP", 0, 4 },
+    below = { "TOP", "BOTTOM", 0, -4 },
+}
+
 local function UpdateLens(f, s, px, py, facing)
-    local R = GP:HudSettings().lensRange
+    local hs = GP:HudSettings()
+    local R = hs.lensRange
     local m = s.mapID
     local pts, count
     if s.line then pts, count = s.line, floor(#s.line / 2) else pts, count = GP:DrawPoints(s.route) end
@@ -485,11 +505,21 @@ local function UpdateLens(f, s, px, py, facing)
             f.dots[di]:ClearAllPoints()
             f.dots[di]:SetPoint("CENTER", f, "CENTER", x, y)
             local nm = f.names[di]
-            if st.current or st.empty then
-                nm:SetText(st.empty and L["empty"] or ((st.what or L["Stop %d/%d"]:format(st.num, s.n)) .. "  " .. FormatDist(sqrt(r * r + a * a))))
+            local text
+            if st.empty then
+                text = hs.lensName ~= "off" and L["empty"] or nil
+            elseif st.current then
+                local name = st.what or L["Stop %d/%d"]:format(st.num, s.n)
+                local dist = FormatDist(sqrt(r * r + a * a))
+                text = (hs.lensName == "both" and (name .. "  " .. dist)) or (hs.lensName == "name" and name)
+                    or (hs.lensName == "dist" and dist) or nil
+            end
+            if text then
+                nm:SetText(text)
                 nm:SetTextColor(c[1], c[2], c[3])
                 nm:ClearAllPoints()
-                nm:SetPoint("LEFT", f.dots[di], "RIGHT", 6, 0)
+                local at = NAME_AT[hs.lensNameAt] or NAME_AT.right
+                nm:SetPoint(at[1], f.dots[di], at[2], at[3], at[4])
                 nm:Show()
             else
                 nm:Hide()
@@ -497,7 +527,17 @@ local function UpdateLens(f, s, px, py, facing)
         end
     end
     for i = di + 1, #f.dots do f.dots[i]:Hide(); f.names[i]:Hide() end
-    f.range:SetText(L["%d yards round you"]:format(R))
+    local at = hs.lensRangeAt
+    if at == "off" then
+        f.range:Hide()
+    else
+        f.range:ClearAllPoints()
+        if at == "below" then f.range:SetPoint("TOP", f, "CENTER", 0, -LENS_RY - 6)
+        elseif at == "inside" then f.range:SetPoint("TOP", f, "CENTER", 0, LENS_RY - 8)
+        else f.range:SetPoint("BOTTOM", f, "CENTER", 0, LENS_RY + 6) end
+        f.range:SetText(L["%d yards round you"]:format(R))
+        f.range:Show()
+    end
 end
 
 ---------------------------------------------------------------------------

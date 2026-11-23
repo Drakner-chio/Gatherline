@@ -274,7 +274,12 @@ local function BuildRoutes(p)
                 local lap = (GP.db.speed and L["%s a lap"] or L["%s a lap on foot"]):format(GP:LapTime(route))
                 local parts = { (lap:gsub("^%l", string.upper)) }
                 if (route.sight or 0) > 0 then parts[#parts + 1] = L["passes within %d yards"]:format(route.sight) end
-                if route.walked then parts[#parts + 1] = "|cff" .. T.ACCENT_HEX .. L["over the ground"] .. "|r" end
+                if route.walked and not route.drawn then
+                    -- worked out on foot, but its lines are straight (traced before, or changed since): rebuild
+                    parts[#parts + 1] = "|cffff9a3c" .. L["straight lines: rebuild"] .. "|r"
+                elseif route.walked then
+                    parts[#parts + 1] = "|cff" .. T.ACCENT_HEX .. L["over the ground"] .. "|r"
+                end
                 local text = line1 .. "\n" .. table.concat(parts, dot)
                 local stats = GP:StatsLine(route)
                 if stats then

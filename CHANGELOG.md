@@ -7,6 +7,9 @@
   (right, left, above, below), and where the reach line ("100 yards round you") goes: above the
   lens, in it at the top, below it, or off. It now starts above the lens, clear of quest and NPC
   text in the middle of the screen. Its size is the lens's *Text size* under *Look*.
+- A route worked out on foot whose lines are still straight (built while the walking maps couldn't
+  be read, or with nodes added or taken out since) now says so in orange on its row: *straight
+  lines: rebuild*. Rebuilding draws its lines along the ground again.
 
 ## v1.10.5
 

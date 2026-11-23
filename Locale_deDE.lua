@@ -559,6 +559,7 @@ ns.TRANSLATIONS.deDE = {
     ["In the lens, at the top"] = "In der Linse, oben",
     ["Below the lens"] = "Unter der Linse",
     ["What's written by the stop you head for on the lens. Its size: Look, Ground lens, Text size."] = "Was in der Linse am Halt steht, zu dem du unterwegs bist. Die Größe: Aussehen, Bodenlinse, Textgröße.",
+    ["straight lines: rebuild"] = "gerade Linien: neu erstellen",
     ["Where that writing sits by the stop's dot."] = "Wo diese Beschriftung am Punkt des Halts steht.",
     ["Where the line saying how far the lens reaches (\"100 yards round you\") goes, or off. Above the lens keeps it clear of quest and NPC text in the middle of the screen."] = "Wo die Zeile steht, die sagt, wie weit die Linse reicht („100 m um dich“), oder aus. Über der Linse bleibt sie frei von Quest- und NPC-Text in der Bildschirmmitte.",
 }

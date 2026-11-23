@@ -31,7 +31,7 @@ local function drain()
 end
 
 local ns = { GP = { Print = print } }
-for _, f in ipairs({ "Routing/PathGrid.lua", "Routing/Path.lua", "Routing/PathJobs.lua", "Walk.lua" }) do
+for _, f in ipairs({ "Routing/PathCeiling.lua", "Routing/PathGrid.lua", "Routing/Path.lua", "Routing/PathJobs.lua", "Walk.lua" }) do
 	assert(loadfile(f))("Gatherline", ns)
 end
 local Walk = ns.GP.Walk

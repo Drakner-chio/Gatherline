@@ -6,7 +6,7 @@ assert(loadfile(spf .. "/tools/load_nav.lua"))(0, spf, nil, true)   -- packed, a
 assert(ShortestPathForeverPathData[0].packed, "the walking maps are packed, as in the game")
 
 local theirs, ours = {}, {}
-for _, f in ipairs({ "PathGrid.lua", "Path.lua", "PathJobs.lua" }) do
+for _, f in ipairs({ "PathCeiling.lua", "PathGrid.lua", "Path.lua", "PathJobs.lua" }) do
 	assert(loadfile(spf .. "/Routing/" .. f))("ShortestPathForever", theirs)
 	assert(loadfile("Routing/" .. f))("Gatherline", ours)
 end

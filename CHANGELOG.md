@@ -1,5 +1,13 @@
 # Gatherline
 
+## v1.10.5
+
+- **Fixed: routes in straight lines with Shortest Path Forever 1.45.** It now ships its walking
+  maps in a new format (4), which Gatherline's copy of the walking search could not read (one chat
+  line, then straight lines only). The walking search is brought up to Shortest Path Forever 1.45.4,
+  and it reads the ceilings in the new maps too (caves, overhangs, the floors under a bridge).
+  Rebuild a route to get the new lines.
+
 ## v1.10.4
 
 - **Fixed: routes in straight lines with Shortest Path Forever 1.43.** Its walking maps changed

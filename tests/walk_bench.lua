@@ -15,7 +15,7 @@ local COUNT, SIGHT = tonumber(arg[3]) or 150, tonumber(arg[4]) or 100
 assert(loadfile(spf .. "/tools/load_nav.lua"))(area.map, spf)
 
 local ns = { GP = { Print = print } }
-for _, f in ipairs({ "Optimize.lua", "Routing/PathGrid.lua", "Routing/Path.lua", "Routing/PathJobs.lua" }) do
+for _, f in ipairs({ "Optimize.lua", "Routing/PathCeiling.lua", "Routing/PathGrid.lua", "Routing/Path.lua", "Routing/PathJobs.lua" }) do
 	assert(loadfile(f))("Gatherline", ns)
 end
 local O, Path = ns.Optimize, ns.Path

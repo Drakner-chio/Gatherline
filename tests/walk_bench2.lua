@@ -13,7 +13,7 @@ local area = assert(AREAS[arg[2]])
 local COUNT, SIGHT, SEED = tonumber(arg[3]) or 250, tonumber(arg[4]) or 185, tonumber(arg[5]) or 11
 assert(loadfile(spf .. "/tools/load_nav.lua"))(area.map, spf)
 local ns = { GP = { Print = print } }
-for _, f in ipairs({ "Optimize.lua", "Routing/PathGrid.lua", "Routing/Path.lua", "Routing/PathJobs.lua" }) do
+for _, f in ipairs({ "Optimize.lua", "Routing/PathCeiling.lua", "Routing/PathGrid.lua", "Routing/Path.lua", "Routing/PathJobs.lua" }) do
 	assert(loadfile(f))("Gatherline", ns)
 end
 local O, Path = ns.Optimize, ns.Path

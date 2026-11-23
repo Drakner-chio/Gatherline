@@ -29,6 +29,7 @@ Hud.lua
 Hazards_Data.lua
 NoGo.lua
 Pin.xml
+Routing\PathCeiling.lua
 Routing\PathGrid.lua
 Routing\Path.lua
 Routing\PathJobs.lua
